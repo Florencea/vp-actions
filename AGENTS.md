@@ -67,20 +67,24 @@ vpx ./scripts/release.ts --dry-run --bump=auto
 
 ## 4. Release Pipeline & Invariants
 
-This repository operates on a direct, automated release model without GitHub Release PRs:
+This repository operates on a single source of truth (SSOT) automated release model executed exclusively on GitHub Actions:
 
 1. **Conventional Commits Release Trigger**:
    - Commits containing `BREAKING CHANGE:` or `feat!:` / `fix!:` trigger a major version bump (`v2.0.0`, updating `v2`).
-   - Commits prefixed with `feat:` trigger a minor version bump (`v1.1.0`, updating `v1`).
-   - Commits prefixed with `fix:` or `perf:` trigger a patch version bump (`v1.0.1`, updating `v1`).
+   - Commits prefixed with `feat:` trigger a minor version bump (e.g. `v1.3.0`, updating `v1`).
+   - Commits prefixed with `fix:` or `perf:` trigger a patch version bump (e.g. `v1.2.1`, updating `v1`).
    - Commits prefixed with `chore:`, `docs:`, `ci:`, or `test:` do not trigger a release.
-2. **Major Floating Tag Invariant**:
+2. **Local Tagging Prohibition & CI SSOT**:
+   - Creating or pushing version tags manually from local environments is strictly prohibited. Version calculation, git tagging, and GitHub Releases are executed exclusively by `.github/workflows/release.yml` upon push to `main`.
+   - Local environments synchronize tags using `git fetch origin --tags`.
+3. **Major Floating Tag Invariant**:
    - Consumer applications pin to the major floating tag (e.g. `uses: Florencea/vp-actions/actions/setup-vp-env@v1`).
    - The release script automatically advances the major floating tag (`v1`) to point to the latest semantic release tag.
-3. **Platform Compatibility Invariant**:
-   - `platform-compat` (`windows-latest`, `macos-latest`) must initialize Playwright via `actions/setup-playwright` whenever browser or unit tests require browser binaries.
+4. **Runner Version Pinning & Platform Compatibility**:
+   - Workflows must strictly use pinned runner versions: `gatekeeper` uses `ubuntu-24.04`, and `platform-compat` uses `windows-2025` and `macos-26`. Floating `*-latest` runner labels are strictly prohibited across all workflows.
+   - `platform-compat` (`windows-2025`, `macos-26`) must initialize Playwright via `actions/setup-playwright` whenever browser or unit tests require browser binaries.
    - In `actions/setup-playwright`, version outputs must strip `\r` (`tr -d '\r'`) for Windows runner safety.
-4. **Node.js Engine Exact Invariant**:
+5. **Node.js Engine Exact Invariant**:
    - `package.json` pins `engines.node` to exact `"26.13.0"` matching all `vp-*` ecosystem projects.
 
 ---

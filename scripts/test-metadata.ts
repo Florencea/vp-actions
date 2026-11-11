@@ -80,6 +80,14 @@ validateFile(".github/workflows/vp-web-ci.yml", (content, errors) => {
   if (!content.includes("platform-compat:")) {
     errors.push("Missing platform-compat job");
   }
+  if (
+    /runs-on:\s*.*-latest/i.test(content) ||
+    /-\s*(?:ubuntu|windows|macos)-latest/i.test(content)
+  ) {
+    errors.push(
+      "vp-web-ci.yml must use pinned runner versions, prohibited floating *-latest runners",
+    );
+  }
   // Ensure platform-compat includes Setup Playwright Browsers
   const platformCompatIndex = content.indexOf("platform-compat:");
   if (platformCompatIndex === -1) {
@@ -113,9 +121,23 @@ validateFile(".github/workflows/release.yml", (content, errors) => {
   if (!content.includes("vpx ./scripts/release.ts")) {
     errors.push("release.yml must execute vpx ./scripts/release.ts");
   }
+  if (/runs-on:\s*.*-latest/i.test(content)) {
+    errors.push(
+      "release.yml must use pinned runner versions, prohibited floating *-latest runners",
+    );
+  }
 });
 
-// 5. Validate package.json
+// 5. Validate .github/workflows/test-actions.yml
+validateFile(".github/workflows/test-actions.yml", (content, errors) => {
+  if (/runs-on:\s*.*-latest/i.test(content)) {
+    errors.push(
+      "test-actions.yml must use pinned runner versions, prohibited floating *-latest runners",
+    );
+  }
+});
+
+// 6. Validate package.json
 validateFile("package.json", (content, errors) => {
   try {
     const pkg: unknown = JSON.parse(content);

@@ -28,3 +28,13 @@ All external GitHub Actions referenced across `actions/**/*.yml` and `.github/wo
 
 - Every change to workflow or action YAML files must be validated locally using `vpr lint:ci` (`actionlint`) achieving **0 errors and 0 warnings** before staging.
 - Never embed `actionlint` into remote reusable workflows or production deployment workflows.
+
+---
+
+## 4. Runner Version Pinning Invariant
+
+- All workflows, composite actions, and matrix configurations must strictly use exact pinned runner versions:
+  - Linux: `ubuntu-24.04`
+  - macOS: `macos-26`
+  - Windows: `windows-2025`
+- Floating runner aliases (`ubuntu-latest`, `macos-latest`, `windows-latest`) are strictly prohibited across all workflows and reusable actions.

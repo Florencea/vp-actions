@@ -26,3 +26,11 @@ Commits to `main` trigger automated releases via `scripts/release.ts`:
 - `fix:` or `perf:`: Triggers patch release bump (`v1.0.x`).
 - `feat!:` or `BREAKING CHANGE:`: Triggers major release bump (`v2.0.0`).
 - `chore:`, `docs:`, `ci:`, `test:`, `refactor:`: Do NOT trigger a release bump.
+
+---
+
+## 4. Local Tagging Prohibition & Release SSOT
+
+- AI agents and developers must NEVER execute `git tag` or push tags manually to remote.
+- The GitHub Actions release workflow (`.github/workflows/release.yml`) is the sole SSOT for calculating semantic versions, creating git tags, and publishing GitHub Releases.
+- Local environments must synchronize tags exclusively via `git fetch origin --tags`.

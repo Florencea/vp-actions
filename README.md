@@ -59,7 +59,7 @@ jobs:
 | `pre-test-command`       | `string`  | `""`         | Hook executed immediately before linting and testing (e.g. database setup) |
 | `build-command`          | `string`  | `"vp build"` | Production build command                                                   |
 | `enable-e2e`             | `boolean` | `true`       | Whether to run Playwright E2E browser tests                                |
-| `enable-platform-compat` | `boolean` | `false`      | Runs a secondary matrix job on `windows-latest` and `macos-latest`         |
+| `enable-platform-compat` | `boolean` | `false`      | Runs a secondary matrix job on `windows-2025` and `macos-26`               |
 
 ---
 
@@ -78,7 +78,7 @@ on:
 
 jobs:
   gatekeeper:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout repository
@@ -130,28 +130,28 @@ jobs:
 Workflows and actions adhere to Semantic Versioning with automated pipeline execution:
 
 - **Major Floating Tags (`@v1`)**: Consumer workflows pin to `@v1` to automatically receive non-breaking improvements, runtime patches, and security updates.
-- **Specific Release Tags (`@v1.0.0`)**: Used for strict pinning when determinism across minor modifications is desired.
+- **Specific Release Tags (`@v1.2.0`)**: Used for strict pinning when determinism across minor modifications is desired.
 
 ### Automated Release Pipeline
 
-The repository uses an automated release workflow (`.github/workflows/release.yml`) without pull request dependencies:
+The repository operates on a single source of truth (SSOT) automated release workflow (`.github/workflows/release.yml`) executed exclusively on GitHub Actions:
 
 1. **Continuous Release on `main`**:
    - Pushes to the `main` branch evaluate Conventional Commits since the latest release tag.
-   - `fix:` / `perf:` triggers a patch release (`v1.0.1`).
-   - `feat:` triggers a minor release (`v1.1.0`).
+   - `fix:` / `perf:` triggers a patch release (`v1.2.1`).
+   - `feat:` triggers a minor release (`v1.3.0`).
    - `BREAKING CHANGE:` or `feat!:` triggers a major release (`v2.0.0`).
    - The release job automatically updates the corresponding major floating tag (`v1`) to point to the newly published commit.
-2. **Manual Workflow Dispatch**:
+2. **Manual Tagging Prohibition & Local Sync**:
+   - Creating or pushing version tags manually from local workstations is strictly prohibited to prevent version skew.
+   - Run `git fetch origin --tags` locally to synchronize newly published tags.
+3. **Manual Workflow Dispatch**:
    - Trigger the `Release` workflow from the GitHub Actions tab or CLI.
    - Choose `bump`: `auto`, `patch`, `minor`, or `major`.
    - Enable `dry_run: true` to simulate release calculation without modifying git tags.
-3. **Local Simulation & Manual Tagging**:
+4. **Local Dry-Run Simulation**:
 
 ```bash
-# Dry-run release evaluation
+# Dry-run release evaluation in local simulation mode
 vpx ./scripts/release.ts --dry-run --bump=auto
-
-# Execute release manually with floating tag update
-vpx ./scripts/release.ts --bump=patch --push --github-release
 ```
