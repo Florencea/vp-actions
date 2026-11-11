@@ -47,10 +47,11 @@ jobs:
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1
 
-      - name: Gatekeeper Validation
-        run: |
-          actionlint
-          vpx ./scripts/test-metadata.ts
+      - name: Lint Workflows (actionlint)
+        uses: raven-actions/actionlint@v2
+
+      - name: Gatekeeper Validation (Action Metadata)
+        run: vpx ./scripts/test-metadata.ts
 
       - name: Execute Release
         env:

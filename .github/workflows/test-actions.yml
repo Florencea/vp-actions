@@ -35,7 +35,7 @@ jobs:
         uses: voidzero-dev/setup-vp@v1
 
       - name: Lint Workflows and Actions (actionlint)
-        run: actionlint
+        uses: raven-actions/actionlint@v2
 
       - name: Validate Action Metadata & Configuration
         run: vpx ./scripts/test-metadata.ts
