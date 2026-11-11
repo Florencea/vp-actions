@@ -21,7 +21,7 @@ runs:
     - name: Get Playwright version
       id: playwright-version
       shell: bash
-      run: echo "version=$(vp exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      run: echo "version=$(vp exec playwright --version 2>/dev/null | awk '{print $2}' | tr -d '\r' || echo 'latest')" >> "$GITHUB_OUTPUT"
 
     - name: Cache Playwright Browsers
       uses: actions/cache@v6

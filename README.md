@@ -127,21 +127,31 @@ jobs:
 
 ## Versioning & Release Strategy
 
-Workflows and actions adhere to Semantic Versioning:
+Workflows and actions adhere to Semantic Versioning with automated pipeline execution:
 
-- **Major Floating Tags (`@v1`)**: Consumer workflows must pin to `@v1` to automatically receive non-breaking improvements, runtime patches, and security updates.
+- **Major Floating Tags (`@v1`)**: Consumer workflows pin to `@v1` to automatically receive non-breaking improvements, runtime patches, and security updates.
 - **Specific Release Tags (`@v1.0.0`)**: Used for strict pinning when determinism across minor modifications is desired.
 
-To publish updates:
+### Automated Release Pipeline
+
+The repository uses an automated release workflow (`.github/workflows/release.yml`) without pull request dependencies:
+
+1. **Continuous Release on `main`**:
+   - Pushes to the `main` branch evaluate Conventional Commits since the latest release tag.
+   - `fix:` / `perf:` triggers a patch release (`v1.0.1`).
+   - `feat:` triggers a minor release (`v1.1.0`).
+   - `BREAKING CHANGE:` or `feat!:` triggers a major release (`v2.0.0`).
+   - The release job automatically updates the corresponding major floating tag (`v1`) to point to the newly published commit.
+2. **Manual Workflow Dispatch**:
+   - Trigger the `Release` workflow from the GitHub Actions tab or CLI.
+   - Choose `bump`: `auto`, `patch`, `minor`, or `major`.
+   - Enable `dry_run: true` to simulate release calculation without modifying git tags.
+3. **Local Simulation & Manual Tagging**:
 
 ```bash
-# Tag patch or minor release
-git tag -a v1.0.0 -m "Release v1.0.0"
+# Dry-run release evaluation
+vpx ./scripts/release.ts --dry-run --bump=auto
 
-# Move or update major floating tag
-git tag -fa v1 -m "Update v1 floating tag to v1.0.0"
-
-# Push tags to GitHub
-git push origin v1.0.0
-git push origin v1 --force
+# Execute release manually with floating tag update
+vpx ./scripts/release.ts --bump=patch --push --github-release
 ```

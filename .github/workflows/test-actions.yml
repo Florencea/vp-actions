@@ -22,18 +22,26 @@ defaults:
 
 jobs:
   validate:
-    name: Validate Actions Metadata
+    name: Validate Actions Metadata & Workflows
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1
 
-      - name: Verify Action YAML Files Existence
-        run: |
-          test -f actions/setup-vp-env/action.yml
-          test -f actions/setup-playwright/action.yml
-          test -f .github/workflows/vp-web-ci.yml
+      - name: Lint Workflows and Actions (actionlint)
+        run: actionlint
+
+      - name: Validate Action Metadata & Configuration
+        run: vpx ./scripts/test-metadata.ts
+
+      - name: Check Code and Docs Formatting
+        run: vpx oxfmt --check README.md actions/**/*.yml .github/**/*.yml scripts/*.ts package.json AGENTS.md
+
+      - name: Test Release Automation (Dry Run)
+        run: vpx ./scripts/release.ts --dry-run --bump=patch

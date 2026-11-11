@@ -1,0 +1,19 @@
+{
+  "name": "vp-actions",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared GitHub Actions and Reusable Workflows for Vite+ applications",
+  "type": "module",
+  "scripts": {
+    "agent:verify:inner": "vpr lint && vpr format:check",
+    "agent:verify:gate": "vpr agent:verify:inner && vpr test",
+    "lint": "actionlint",
+    "format": "vpx oxfmt README.md actions/**/*.yml .github/**/*.yml scripts/*.ts package.json AGENTS.md",
+    "format:check": "vpx oxfmt --check README.md actions/**/*.yml .github/**/*.yml scripts/*.ts package.json AGENTS.md",
+    "test": "vpx ./scripts/test-metadata.ts",
+    "release": "vpx ./scripts/release.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

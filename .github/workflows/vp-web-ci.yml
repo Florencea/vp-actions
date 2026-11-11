@@ -105,6 +105,10 @@ jobs:
         with:
           checkout: "false"
 
+      - name: Setup Playwright Browsers
+        if: inputs.enable-e2e
+        uses: Florencea/vp-actions/actions/setup-playwright@v1
+
       - name: Execute Pre-test Hook
         if: inputs.pre-test-command != ''
         run: ${{ inputs.pre-test-command }}
@@ -114,3 +118,14 @@ jobs:
 
       - name: Unit Tests
         run: vp run agent:test:unit
+
+      - name: Upload Test Artifacts on Failure
+        if: failure() && inputs.enable-e2e
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-artifacts-${{ matrix.os }}-${{ runner.arch }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            test-results/
+            playwright-report/
