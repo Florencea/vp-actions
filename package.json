@@ -5,15 +5,22 @@
   "description": "Shared GitHub Actions and Reusable Workflows for Vite+ applications",
   "type": "module",
   "scripts": {
-    "agent:verify:inner": "vpr lint && vpr format:check",
+    "agent:verify:inner": "vpr typecheck && vp lint && vpr lint:ci && vpr format:check",
     "agent:verify:gate": "vpr agent:verify:inner && vpr test",
-    "lint": "actionlint",
-    "format": "vpx oxfmt README.md actions/**/*.yml .github/**/*.yml scripts/*.ts package.json AGENTS.md",
-    "format:check": "vpx oxfmt --check README.md actions/**/*.yml .github/**/*.yml scripts/*.ts package.json AGENTS.md",
+    "lint": "vp lint",
+    "lint:ci": "actionlint",
+    "typecheck": "tsc -b --pretty false",
+    "format": "vp fmt",
+    "format:check": "vp fmt --check",
     "test": "vpx ./scripts/test-metadata.ts",
     "release": "vpx ./scripts/release.ts"
   },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "typescript": "7.0.2",
+    "vite-plus": "catalog:"
+  },
   "engines": {
-    "node": ">=20"
+    "node": "26.13.0"
   }
 }

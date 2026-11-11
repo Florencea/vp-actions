@@ -1,30 +1,63 @@
+<!--VITE PLUS START-->
+
+## Vite+ Guidelines
+
+This project uses Vite+ to manage development tools. Always use `vp` (or `vpr` shorthand for `vp run`) to run commands:
+
+- `vpr <script>` (or `vp run <script>`): Run scripts from `package.json`
+- `vp install`: Install dependencies
+- `vp update`: Update dependencies
+- `vp check`: Run linter, typecheck, format checks
+- `vp fmt`: Run formatter
+- `vp lint`: Run linter
+
+<!--VITE PLUS END-->
+
 # Agent Operations & Maintenance Guide
 
-## Architecture Overview
+## 1. Architecture Overview
 
 `vp-actions` provides shared, modular GitHub Actions and Reusable Workflows for Vite+ applications.
 
-1. **Tier 1: Composite Actions (Infrastructure)**
-   - `actions/setup-vp-env`: Installs Node.js with Vite+, installs dependencies, and manages the Vite Task Cache.
-   - `actions/setup-playwright`: Restores Playwright browser binaries from cache, installs missing binaries, and configures OS dependencies.
-2. **Tier 2: Reusable Workflows (Standards Gate)**
-   - `.github/workflows/vp-web-ci.yml`: Standard three-tier verification gate (`agent:verify:inner` -> `agent:test:unit` -> `vp build` -> `agent:test:e2e`) with cross-platform matrix support (`platform-compat`).
+| Layer                  | Path                              | Responsibility                                                                                             |
+| :--------------------- | :-------------------------------- | :--------------------------------------------------------------------------------------------------------- |
+| **Composite Actions**  | `actions/setup-vp-env/`           | Installs Node.js with Vite+, installs dependencies, and manages the Vite Task Cache                        |
+| **Composite Actions**  | `actions/setup-playwright/`       | Restores Playwright browser binaries from cache, installs missing binaries, and configures OS dependencies |
+| **Reusable Workflows** | `.github/workflows/vp-web-ci.yml` | Standard three-tier verification gate with cross-platform matrix support (`platform-compat`)               |
+| **Automation Scripts** | `scripts/`                        | Release calculation (`release.ts`) and action metadata integrity validation (`test-metadata.ts`)           |
+| **Modular Rules**      | `.agents/rules/`                  | Domain-specific rules for Git delivery and Action maintenance triggered via file globbing                  |
 
 ---
 
-## Agent Verification Commands
+## 2. Git Delivery Protocol & AI Rejection Invariant
 
-Agents modifying workflows or scripts must execute the following commands prior to committing:
+- **AI Direct Commits Globally Prohibited**:
+  - The local environment enforces SSH commit signing (e.g. 1Password) and Git pre-commit verification that rejects direct commits by AI agents.
+  - Agents must NEVER execute `git commit` or `git push`.
+  - Mandatory delivery workflow:
+    1. Apply code changes and verify TypeScript types, linting, and action metadata: `vpr agent:verify:gate`.
+    2. Format modified files: `vpr format`.
+    3. Stage changes using defensive explicit paths: `git add <files>`.
+    4. Output the exact `git commit -m "type(scope): concise imperative description"` command in English following Conventional Commits for manual execution by the user.
+
+---
+
+## 3. Agent Verification Commands
+
+Agents modifying workflows or scripts must execute the following commands prior to staging changes:
 
 ```bash
-# Tier 1: Inner-loop verification (workflow syntax & formatting check)
+# Tier 1: Inner-loop verification (TypeScript typecheck + vp lint + actionlint + format check)
 vpr agent:verify:inner
 
-# Tier 2: Full verification gate (actionlint + metadata validation)
+# Tier 2: Full verification gate (inner verification + metadata test)
 vpr agent:verify:gate
 
-# Format all documents, workflows, and TypeScript scripts
-vpr format
+# Individual verification tools
+vpr typecheck          # TypeScript compiler diagnostics (tsc -b --pretty false)
+vp lint                # Oxlint type-aware linting
+vpr lint:ci            # GitHub Actions syntax validation (actionlint)
+vpr format             # Format all documents, workflows, and TypeScript files
 
 # Test release calculation in simulation mode
 vpx ./scripts/release.ts --dry-run --bump=auto
@@ -32,7 +65,7 @@ vpx ./scripts/release.ts --dry-run --bump=auto
 
 ---
 
-## Release Pipeline & Invariants
+## 4. Release Pipeline & Invariants
 
 This repository operates on a direct, automated release model without GitHub Release PRs:
 
@@ -46,4 +79,13 @@ This repository operates on a direct, automated release model without GitHub Rel
    - The release script automatically advances the major floating tag (`v1`) to point to the latest semantic release tag.
 3. **Platform Compatibility Invariant**:
    - `platform-compat` (`windows-latest`, `macos-latest`) must initialize Playwright via `actions/setup-playwright` whenever browser or unit tests require browser binaries.
-   - In `actions/setup-playwright`, version outputs must strip `\r` for Windows runner safety.
+   - In `actions/setup-playwright`, version outputs must strip `\r` (`tr -d '\r'`) for Windows runner safety.
+4. **Node.js Engine Exact Invariant**:
+   - `package.json` pins `engines.node` to exact `"26.13.0"` matching all `vp-*` ecosystem projects.
+
+---
+
+## 5. Modular Domain Rules (`.agents/rules/`)
+
+- **Git Delivery**: [`.agents/rules/git-delivery.md`](./.agents/rules/git-delivery.md) (Standard git delivery and conventional commit format)
+- **Actions & Workflows**: [`.agents/rules/actions.md`](./.agents/rules/actions.md) (Triggers on `actions/**`, `.github/workflows/**`)

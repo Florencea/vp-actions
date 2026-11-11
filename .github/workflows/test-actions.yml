@@ -33,15 +33,26 @@ jobs:
 
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: package.json
+          cache: true
+
+      - name: Install dependencies
+        run: vp install
 
       - name: Lint Workflows and Actions (actionlint)
         uses: raven-actions/actionlint@v2
+
+      - name: Validate TypeScript and Lint
+        run: |
+          vp lint
+          vpr typecheck
 
       - name: Validate Action Metadata & Configuration
         run: vpx ./scripts/test-metadata.ts
 
       - name: Check Code and Docs Formatting
-        run: vpx oxfmt --check README.md actions/**/*.yml .github/**/*.yml scripts/*.ts package.json AGENTS.md
+        run: vpr format:check
 
       - name: Test Release Automation (Dry Run)
         run: vpx ./scripts/release.ts --dry-run --bump=patch

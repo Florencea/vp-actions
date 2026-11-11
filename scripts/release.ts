@@ -27,7 +27,9 @@ function runGit(args: string[]): string {
     }).trim();
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Git command failed: git ${args.join(" ")}\n${message}`);
+    throw new Error(`Git command failed: git ${args.join(" ")}\n${message}`, {
+      cause: error,
+    });
   }
 }
 
@@ -97,6 +99,10 @@ function bumpVersion(current: SemVer, bump: BumpType): SemVer {
       return { major: current.major, minor: current.minor + 1, patch: 0 };
     case "patch":
       return { major: current.major, minor: current.minor, patch: current.patch + 1 };
+    default: {
+      const exhaustiveCheck: never = bump;
+      throw new Error(`Unhandled bump type: ${String(exhaustiveCheck)}`);
+    }
   }
 }
 

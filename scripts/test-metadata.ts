@@ -6,6 +6,10 @@ interface ValidationResult {
   errors: string[];
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 const rootDir = resolve(import.meta.dirname, "..");
 const results: ValidationResult[] = [];
 
@@ -81,11 +85,15 @@ validateFile(".github/workflows/vp-web-ci.yml", (content, errors) => {
   if (platformCompatIndex === -1) {
     errors.push("Missing platform-compat definition");
   } else {
-    const platformCompatSection = content.slice(platformCompatIndex);
-    if (!platformCompatSection.includes("Setup Playwright Browsers")) {
+    const hasPlaywrightStep = content.includes("Setup Playwright Browsers", platformCompatIndex);
+    if (!hasPlaywrightStep) {
       errors.push('platform-compat must include "Setup Playwright Browsers" step');
     }
-    if (!platformCompatSection.includes("actions/setup-playwright@v1")) {
+    const hasPlaywrightAction = content.includes(
+      "actions/setup-playwright@v1",
+      platformCompatIndex,
+    );
+    if (!hasPlaywrightAction) {
       errors.push("platform-compat must use actions/setup-playwright@v1");
     }
   }
@@ -110,15 +118,32 @@ validateFile(".github/workflows/release.yml", (content, errors) => {
 // 5. Validate package.json
 validateFile("package.json", (content, errors) => {
   try {
-    const pkg = JSON.parse(content) as Record<string, unknown>;
-    if (pkg.type !== "module") {
+    const pkg: unknown = JSON.parse(content);
+    if (!isRecord(pkg)) {
+      errors.push("package.json must be an object");
+      return;
+    }
+    if (pkg["type"] !== "module") {
       errors.push('package.json must declare "type": "module"');
     }
-    const scripts = (pkg.scripts ?? {}) as Record<string, string>;
+    const engines = pkg["engines"];
+    if (!isRecord(engines) || engines["node"] !== "26.13.0") {
+      const nodeVersion = isRecord(engines) ? String(engines["node"]) : "undefined";
+      errors.push(
+        `package.json engines.node must be pinned to exact "26.13.0", found "${nodeVersion}"`,
+      );
+    }
+    const scripts = pkg["scripts"];
+    if (!isRecord(scripts)) {
+      errors.push('package.json missing "scripts" object');
+      return;
+    }
     const requiredScripts = [
       "agent:verify:inner",
       "agent:verify:gate",
       "lint",
+      "lint:ci",
+      "typecheck",
       "format",
       "test",
       "release",
@@ -128,7 +153,7 @@ validateFile("package.json", (content, errors) => {
         errors.push(`package.json missing required script: "${script}"`);
       }
     }
-  } catch (err) {
+  } catch (err: unknown) {
     errors.push(`Failed to parse package.json: ${String(err)}`);
   }
 });

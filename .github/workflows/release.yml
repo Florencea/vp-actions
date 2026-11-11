@@ -46,12 +46,21 @@ jobs:
 
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: package.json
+          cache: true
+
+      - name: Install dependencies
+        run: vp install
 
       - name: Lint Workflows (actionlint)
         uses: raven-actions/actionlint@v2
 
       - name: Gatekeeper Validation (Action Metadata)
-        run: vpx ./scripts/test-metadata.ts
+        run: |
+          vp lint
+          vpr typecheck
+          vpx ./scripts/test-metadata.ts
 
       - name: Execute Release
         env:

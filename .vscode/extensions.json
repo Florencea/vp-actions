@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "oxc.oxc-vscode",
+    "VoidZero.vite-plus-extension-pack",
+    "typescriptteam.native-preview"
+  ],
+  "unwantedRecommendations": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+}
