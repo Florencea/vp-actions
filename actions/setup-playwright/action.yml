@@ -45,26 +45,80 @@ runs:
       if: runner.os == 'Linux' && inputs.install-deps == 'true'
       shell: bash
       run: |
-        sudo python3 -c '
-        import glob, pathlib
-        patterns = ["/etc/apt/sources.list", "/etc/apt/sources.list.d/*.sources", "/etc/apt/sources.list.d/*.list"]
-        for pattern in patterns:
-            for path_str in glob.glob(pattern):
-                p = pathlib.Path(path_str)
-                if p.is_file():
-                    try:
-                        text = p.read_text(encoding="utf-8", errors="ignore")
-                        if "azure.archive.ubuntu.com" in text:
-                            p.write_text(text.replace("azure.archive.ubuntu.com", "archive.ubuntu.com"), encoding="utf-8")
-                    except Exception:
-                        pass
-        ' || true
-        sudo mkdir -p /etc/apt/apt.conf.d
-        echo 'Acquire::Retries "3";
-        Acquire::http::Timeout "30";
-        Acquire::https::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/80-playwright-retries >/dev/null || true
-        echo 'nameserver 8.8.8.8
-        nameserver 1.1.1.1' | sudo tee -a /etc/resolv.conf >/dev/null || true
+        set -euo pipefail
+        run_root() {
+          if [ "$(id -u)" -eq 0 ]; then
+            "$@"
+          elif command -v sudo >/dev/null 2>&1; then
+            sudo "$@"
+          else
+            return 1
+          fi
+        }
+
+        if [ -f /etc/apt/apt-mirrors.txt ]; then
+          tmp_mirrors="$(mktemp)"
+          awk '
+            /^[ \t]*$/ || /^[ \t]*#/ { next }
+            {
+              url = $1
+              meta = ""
+              for (i = 2; i <= NF; i++) {
+                if ($i !~ /^priority:[0-9]+$/) {
+                  meta = (meta == "" ? $i : meta " " $i)
+                }
+              }
+              entry = (meta == "" ? url : url "\t" meta)
+              if (url ~ /azure\.(archive|ports)\.ubuntu\.com/) {
+                azure[++na] = entry
+              } else {
+                primary[++np] = entry
+              }
+            }
+            END {
+              prio = 1
+              if (np == 0) {
+                for (i = 1; i <= na; i++) {
+                  u = azure[i]
+                  sub(/azure\.archive\.ubuntu\.com/, "archive.ubuntu.com", u)
+                  sub(/azure\.ports\.ubuntu\.com/, "ports.ubuntu.com", u)
+                  printf "%s\tpriority:%d\n", u, prio++
+                }
+              } else {
+                for (i = 1; i <= np; i++) {
+                  printf "%s\tpriority:%d\n", primary[i], prio++
+                }
+              }
+              for (i = 1; i <= na; i++) {
+                printf "%s\tpriority:99\n", azure[i]
+              }
+            }
+          ' /etc/apt/apt-mirrors.txt > "$tmp_mirrors"
+          if [ -s "$tmp_mirrors" ]; then
+            run_root tee /etc/apt/apt-mirrors.txt < "$tmp_mirrors" >/dev/null || true
+          fi
+          rm -f "$tmp_mirrors"
+        fi
+
+        shopt -s nullglob
+        for src_file in /etc/apt/sources.list /etc/apt/sources.list.d/*.sources /etc/apt/sources.list.d/*.list; do
+          [ -f "$src_file" ] || continue
+          if grep -qE 'azure\.(archive|ports)\.ubuntu\.com' "$src_file"; then
+            tmp_src="$(mktemp)"
+            awk '{
+              gsub(/azure\.archive\.ubuntu\.com/, "archive.ubuntu.com")
+              gsub(/azure\.ports\.ubuntu\.com/, "ports.ubuntu.com")
+              print
+            }' "$src_file" > "$tmp_src"
+            if [ -s "$tmp_src" ]; then
+              run_root tee "$src_file" < "$tmp_src" >/dev/null || true
+            fi
+            rm -f "$tmp_src"
+          fi
+        done
+
+        run_root mkdir -p /etc/apt/apt.conf.d || true
+        printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' | run_root tee /etc/apt/apt.conf.d/80-playwright-retries >/dev/null || true
 
     - name: Install Playwright system dependencies on Linux
       if: runner.os == 'Linux' && inputs.install-deps == 'true'

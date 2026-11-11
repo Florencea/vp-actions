@@ -73,6 +73,15 @@ validateFile("actions/setup-playwright/action.yml", (content, errors) => {
   if (!content.includes("Configure Linux APT resilience")) {
     errors.push("Missing Configure Linux APT resilience step");
   }
+  if (!content.includes("/etc/apt/apt-mirrors.txt")) {
+    errors.push("Must configure /etc/apt/apt-mirrors.txt for GitHub Actions Ubuntu runners");
+  }
+  if (content.includes("python3")) {
+    errors.push("Must not depend on python3 for APT mirror configuration");
+  }
+  if (content.includes("/etc/resolv.conf")) {
+    errors.push("Must not mutate /etc/resolv.conf globally");
+  }
 });
 
 // 3. Validate .github/workflows/vp-web-ci.yml
