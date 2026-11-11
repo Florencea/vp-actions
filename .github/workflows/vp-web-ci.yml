@@ -1,0 +1,116 @@
+name: Vite+ Standard Web CI
+
+on:
+  workflow_call:
+    inputs:
+      pre-test-command:
+        description: Command to execute before tests (e.g. vp run db:seed)
+        type: string
+        required: false
+        default: ""
+      build-command:
+        description: Build command
+        type: string
+        required: false
+        default: vp build
+      enable-e2e:
+        description: Whether to execute E2E browser tests
+        type: boolean
+        required: false
+        default: true
+      enable-platform-compat:
+        description: Run platform compatibility checks on macOS and Windows
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  CI: "true"
+  NO_COLOR: "1"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  gatekeeper:
+    name: Gatekeeper (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Vite+ Environment
+        uses: Florencea/vp-actions/actions/setup-vp-env@v1
+        with:
+          checkout: "false"
+
+      - name: Setup Playwright Browsers
+        if: inputs.enable-e2e
+        uses: Florencea/vp-actions/actions/setup-playwright@v1
+
+      - name: Execute Pre-test Hook
+        if: inputs.pre-test-command != ''
+        run: ${{ inputs.pre-test-command }}
+
+      - name: Inner Loop Verification (Typecheck, Lint, Tailwind)
+        run: vp run agent:verify:inner
+
+      - name: Dead Code Check (Knip)
+        run: vp run check:deadcode
+
+      - name: Unit Tests
+        run: vp run agent:test:unit
+
+      - name: Build
+        run: ${{ inputs.build-command }}
+
+      - name: E2E Tests
+        if: inputs.enable-e2e
+        run: vp run agent:test:e2e
+
+      - name: Upload Test Artifacts on Failure
+        if: failure() && inputs.enable-e2e
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-artifacts-${{ runner.os }}-${{ runner.arch }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            test-results/
+            playwright-report/
+
+  platform-compat:
+    name: Platform Compatibility (${{ matrix.os }})
+    needs: [gatekeeper]
+    if: inputs.enable-platform-compat
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Vite+ Environment
+        uses: Florencea/vp-actions/actions/setup-vp-env@v1
+        with:
+          checkout: "false"
+
+      - name: Execute Pre-test Hook
+        if: inputs.pre-test-command != ''
+        run: ${{ inputs.pre-test-command }}
+
+      - name: Build
+        run: ${{ inputs.build-command }}
+
+      - name: Unit Tests
+        run: vp run agent:test:unit
