@@ -76,7 +76,7 @@ This repository operates on a single source of truth (SSOT) automated release mo
    - Commits prefixed with `chore:`, `docs:`, `ci:`, or `test:` do not trigger a release.
 2. **Local Tagging Prohibition & CI SSOT**:
    - Creating or pushing version tags manually from local environments is strictly prohibited. Version calculation, git tagging, and GitHub Releases are executed exclusively by `.github/workflows/release.yml`, triggered automatically via `workflow_run` only after the `CI` workflow (`.github/workflows/test-actions.yml`) succeeds on `main`.
-   - Local environments synchronize tags using `git fetch origin --tags`.
+   - Local environments synchronize tags using `git fetch origin --tags --force` (required because the floating major tag `v1` is force-updated on each release). Workspace `.vscode/settings.json` enables `git.replaceTagsWhenPull` and disables `git.followTagsWhenSync` so editor Sync/Pull replaces conflicting floating tags without prompts.
 3. **Major Floating Tag Invariant**:
    - Consumer applications pin to the major floating tag (e.g. `uses: Florencea/vp-actions/actions/setup-vp-env@v1`).
    - The release script automatically advances the major floating tag (`v1`) to point to the latest semantic release tag.

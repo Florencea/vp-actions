@@ -146,7 +146,7 @@ The repository operates on a single source of truth (SSOT) automated release wor
    - The release job automatically updates the corresponding major floating tag (`v1`) to point to the newly published commit.
 2. **Manual Tagging Prohibition & Local Sync**:
    - Creating or pushing version tags manually from local workstations is strictly prohibited to prevent version skew.
-   - Run `git fetch origin --tags` locally to synchronize newly published tags.
+   - Run `git fetch origin --tags --force` locally to synchronize newly published and force-updated floating tags (`v1`). Workspace `.vscode/settings.json` configures `git.replaceTagsWhenPull` so editor Source Control Sync/Pull updates `v1` without conflict prompts.
 3. **Manual Workflow Dispatch**:
    - Trigger the `Release` workflow from the GitHub Actions tab or CLI.
    - Choose `bump`: `auto`, `patch`, `minor`, or `major`.

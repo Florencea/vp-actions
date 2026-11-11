@@ -33,4 +33,4 @@ Commits to `main` trigger automated releases via `scripts/release.ts`:
 
 - AI agents and developers must NEVER execute `git tag` or push tags manually to remote.
 - The GitHub Actions release workflow (`.github/workflows/release.yml`) is the sole SSOT for calculating semantic versions, creating git tags, and publishing GitHub Releases.
-- Local environments must synchronize tags exclusively via `git fetch origin --tags`.
+- Local environments must synchronize tags exclusively via `git fetch origin --tags --force` (required for the force-updated floating major tag `v1`). Editor Sync/Pull operations rely on `.vscode/settings.json` (`git.replaceTagsWhenPull: true`, `git.followTagsWhenSync: false`) to resolve floating tag conflicts automatically.
