@@ -8,7 +8,7 @@ This repository provides a two-tier CI architecture:
 
 1. **Tier 1: Composite Actions (Infrastructure)**
    - `actions/setup-vp-env`: Installs Node.js with Vite+, installs dependencies, and manages the Vite Task Cache (`node_modules/.vite/task-cache`).
-   - `actions/setup-playwright`: Restores Playwright browser binaries from cache, installs missing browsers (`chromium`), and installs system dependencies on Linux.
+   - `actions/setup-playwright`: Installs Playwright Chromium and Linux system dependencies.
 2. **Tier 2: Reusable Workflows (Standards Gate)**
    - `.github/workflows/vp-web-ci.yml`: Standard three-tier verification gate (`agent:verify:inner` -> `agent:test:unit` -> `vp build` -> `agent:test:e2e`), with support for pre-test hooks and cross-platform matrix testing.
 
@@ -40,7 +40,7 @@ permissions:
 jobs:
   ci:
     name: Gatekeeper
-    uses: Florencea/vp-actions/.github/workflows/vp-web-ci.yml@v1
+    uses: Florencea/vp-actions/.github/workflows/vp-web-ci.yml@v2
     with:
       # Optional: Command executed before test phases (e.g. database seed)
       pre-test-command: vp run db:seed
@@ -85,12 +85,12 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Setup Vite+ Environment
-        uses: Florencea/vp-actions/actions/setup-vp-env@v1
+        uses: Florencea/vp-actions/actions/setup-vp-env@v2
         with:
           checkout: "false"
 
       - name: Setup Playwright Browsers
-        uses: Florencea/vp-actions/actions/setup-playwright@v1
+        uses: Florencea/vp-actions/actions/setup-playwright@v2
 
       - name: Verification
         run: vp run agent:verify:inner
@@ -116,13 +116,9 @@ jobs:
 | `node-version-file` | `string` | `"package.json"` | Path to file containing engine version |
 | `install-command`   | `string` | `"vp install"`   | Package installation command           |
 
-#### `actions/setup-playwright` Inputs
+#### `actions/setup-playwright` Behavior
 
-| Input           | Type     | Default               | Description                                          |
-| :-------------- | :------- | :-------------------- | :--------------------------------------------------- |
-| `browser`       | `string` | `"chromium"`          | Browser family to install system dependencies for    |
-| `install-deps`  | `string` | `"true"`              | Whether to install Linux system dependencies via apt |
-| `setup-command` | `string` | `"vp run test:setup"` | Script executed when browser binary cache misses     |
+Takes no inputs. Installs Playwright Chromium directly (`vp exec playwright install --with-deps chromium` on Linux; `vp exec playwright install chromium` on macOS and Windows) without browser caching.
 
 ---
 
@@ -130,8 +126,8 @@ jobs:
 
 Workflows and actions adhere to Semantic Versioning with automated pipeline execution:
 
-- **Major Floating Tags (`@v1`)**: Consumer workflows pin to `@v1` to automatically receive non-breaking improvements, runtime patches, and security updates.
-- **Specific Release Tags (`@v1.2.0`)**: Used for strict pinning when determinism across minor modifications is desired.
+- **Major Floating Tags (`@v2`)**: Consumer workflows pin to `@v2` to automatically receive non-breaking improvements, runtime patches, and security updates. Existing consumers pinned to `@v1` remain unaffected until upgrading to `@v2`.
+- **Specific Release Tags (`@v2.0.0`)**: Used for strict pinning when determinism across minor modifications is desired.
 
 ### Automated Release Pipeline
 
@@ -140,13 +136,13 @@ The repository operates on a single source of truth (SSOT) automated release wor
 1. **CI-Gated Continuous Release on `main`**:
    - Pushes to the `main` branch first execute the `CI` workflow (`.github/workflows/test-actions.yml`).
    - Only when `CI` completes with `success` does `.github/workflows/release.yml` trigger via `workflow_run` to evaluate Conventional Commits since the latest release tag.
-   - `fix:` / `perf:` triggers a patch release (`v1.2.1`).
-   - `feat:` triggers a minor release (`v1.3.0`).
-   - `BREAKING CHANGE:` or `feat!:` triggers a major release (`v2.0.0`).
-   - The release job automatically updates the corresponding major floating tag (`v1`) to point to the newly published commit.
+   - `fix:` / `perf:` triggers a patch release (`v2.0.1`).
+   - `feat:` triggers a minor release (`v2.1.0`).
+   - `BREAKING CHANGE:` or `feat!:` triggers a major release (`v3.0.0`).
+   - The release job automatically updates the corresponding major floating tag (`v2`) to point to the newly published commit.
 2. **Manual Tagging Prohibition & Local Sync**:
    - Creating or pushing version tags manually from local workstations is strictly prohibited to prevent version skew.
-   - Run `git fetch origin --tags --force` locally to synchronize newly published and force-updated floating tags (`v1`). Workspace `.vscode/settings.json` configures `git.replaceTagsWhenPull` so editor Source Control Sync/Pull updates `v1` without conflict prompts.
+   - Run `git fetch origin --tags --force` locally to synchronize newly published and force-updated floating tags (`v2`). Workspace `.vscode/settings.json` configures `git.replaceTagsWhenPull` so editor Source Control Sync/Pull updates floating tags without conflict prompts.
 3. **Manual Workflow Dispatch**:
    - Trigger the `Release` workflow from the GitHub Actions tab or CLI.
    - Choose `bump`: `auto`, `patch`, `minor`, or `major`.

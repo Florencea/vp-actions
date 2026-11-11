@@ -14,13 +14,13 @@ All external GitHub Actions referenced across `actions/**/*.yml` and `.github/wo
 - `voidzero-dev/setup-vp@v1`
 - `actions/cache@v6`
 - `actions/upload-artifact@v7`
-- Internal consumer references: `Florencea/vp-actions/actions/setup-vp-env@v1`, `Florencea/vp-actions/actions/setup-playwright@v1`, `Florencea/vp-actions/.github/workflows/vp-web-ci.yml@v1`
+- Internal consumer references: `Florencea/vp-actions/actions/setup-vp-env@v2`, `Florencea/vp-actions/actions/setup-playwright@v2`, `Florencea/vp-actions/.github/workflows/vp-web-ci.yml@v2`
 
 ---
 
 ## 2. Windows Runner Safety (`tr -d '\r'`)
 
-- Commands in composite actions executed across multiple platforms (especially `actions/setup-playwright`) that pipe command outputs into `$GITHUB_OUTPUT` or `$GITHUB_ENV` must strip carriage returns (`tr -d '\r'`) to prevent Windows runner CRLF breakage.
+- Commands in composite actions executed across multiple platforms that pipe command outputs into `$GITHUB_OUTPUT` or `$GITHUB_ENV` must strip carriage returns (`tr -d '\r'`) to prevent Windows runner CRLF breakage.
 
 ---
 

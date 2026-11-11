@@ -1,138 +1,15 @@
 name: Setup Playwright Browsers
-description: Restores cached Playwright browser binaries, installs missing binaries, and configures Linux system dependencies.
-
-inputs:
-  browser:
-    description: Playwright browser to install (e.g. chromium)
-    required: false
-    default: chromium
-  install-deps:
-    description: Whether to install Linux system dependencies
-    required: false
-    default: "true"
-  setup-command:
-    description: Command used to install browser binaries
-    required: false
-    default: vp run test:setup
+description: Installs Playwright Chromium and Linux system dependencies.
 
 runs:
   using: composite
   steps:
-    - name: Set Playwright Browser Path
+    - name: Install Playwright Chromium (Linux)
+      if: runner.os == 'Linux'
       shell: bash
-      run: echo "PLAYWRIGHT_BROWSERS_PATH=${{ github.workspace }}/.cache/ms-playwright" >> "$GITHUB_ENV"
+      run: vp exec playwright install --with-deps chromium
 
-    - name: Get Playwright version
-      id: playwright-version
+    - name: Install Playwright Chromium
+      if: runner.os != 'Linux'
       shell: bash
-      run: echo "version=$(vp exec playwright --version 2>/dev/null | awk '{print $2}' | tr -d '\r' || echo 'latest')" >> "$GITHUB_OUTPUT"
-
-    - name: Cache Playwright Browsers
-      uses: actions/cache@v6
-      id: playwright-cache
-      with:
-        path: ${{ github.workspace }}/.cache/ms-playwright
-        key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright-version.outputs.version }}
-        restore-keys: |
-          ${{ runner.os }}-${{ runner.arch }}-playwright-
-
-    - name: Install Playwright browser
-      if: steps.playwright-cache.outputs.cache-hit != 'true'
-      shell: bash
-      run: ${{ inputs.setup-command }}
-
-    - name: Configure Linux APT resilience
-      if: runner.os == 'Linux' && inputs.install-deps == 'true'
-      shell: bash
-      run: |
-        set -euo pipefail
-        run_root() {
-          if [ "$(id -u)" -eq 0 ]; then
-            "$@"
-          elif command -v sudo >/dev/null 2>&1; then
-            sudo "$@"
-          else
-            return 1
-          fi
-        }
-
-        if [ -f /etc/apt/apt-mirrors.txt ]; then
-          tmp_mirrors="$(mktemp)"
-          awk '
-            /^[ \t]*$/ || /^[ \t]*#/ { next }
-            {
-              url = $1
-              meta = ""
-              for (i = 2; i <= NF; i++) {
-                if ($i !~ /^priority:[0-9]+$/) {
-                  meta = (meta == "" ? $i : meta " " $i)
-                }
-              }
-              entry = (meta == "" ? url : url "\t" meta)
-              if (url ~ /azure\.(archive|ports)\.ubuntu\.com/) {
-                azure[++na] = entry
-              } else {
-                primary[++np] = entry
-              }
-            }
-            END {
-              prio = 1
-              if (np == 0) {
-                for (i = 1; i <= na; i++) {
-                  u = azure[i]
-                  sub(/azure\.archive\.ubuntu\.com/, "archive.ubuntu.com", u)
-                  sub(/azure\.ports\.ubuntu\.com/, "ports.ubuntu.com", u)
-                  printf "%s\tpriority:%d\n", u, prio++
-                }
-              } else {
-                for (i = 1; i <= np; i++) {
-                  printf "%s\tpriority:%d\n", primary[i], prio++
-                }
-              }
-              for (i = 1; i <= na; i++) {
-                printf "%s\tpriority:99\n", azure[i]
-              }
-            }
-          ' /etc/apt/apt-mirrors.txt > "$tmp_mirrors"
-          if [ -s "$tmp_mirrors" ]; then
-            run_root tee /etc/apt/apt-mirrors.txt < "$tmp_mirrors" >/dev/null || true
-          fi
-          rm -f "$tmp_mirrors"
-        fi
-
-        shopt -s nullglob
-        for src_file in /etc/apt/sources.list /etc/apt/sources.list.d/*.sources /etc/apt/sources.list.d/*.list; do
-          [ -f "$src_file" ] || continue
-          if grep -qE 'azure\.(archive|ports)\.ubuntu\.com' "$src_file"; then
-            tmp_src="$(mktemp)"
-            awk '{
-              gsub(/azure\.archive\.ubuntu\.com/, "archive.ubuntu.com")
-              gsub(/azure\.ports\.ubuntu\.com/, "ports.ubuntu.com")
-              print
-            }' "$src_file" > "$tmp_src"
-            if [ -s "$tmp_src" ]; then
-              run_root tee "$src_file" < "$tmp_src" >/dev/null || true
-            fi
-            rm -f "$tmp_src"
-          fi
-        done
-
-        run_root mkdir -p /etc/apt/apt.conf.d || true
-        printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' | run_root tee /etc/apt/apt.conf.d/80-playwright-retries >/dev/null || true
-
-    - name: Install Playwright system dependencies on Linux
-      if: runner.os == 'Linux' && inputs.install-deps == 'true'
-      shell: bash
-      run: |
-        for attempt in 1 2 3; do
-          echo "Attempt $attempt: installing Playwright system dependencies for ${{ inputs.browser }}..."
-          if vp exec playwright install-deps ${{ inputs.browser }}; then
-            exit 0
-          fi
-          if [ "$attempt" -lt 3 ]; then
-            echo "Attempt $attempt failed. Waiting 5s before retry..." >&2
-            sleep 5
-          fi
-        done
-        echo "Failed to install Playwright dependencies after 3 attempts." >&2
-        exit 1
+      run: vp exec playwright install chromium

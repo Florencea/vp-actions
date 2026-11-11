@@ -22,9 +22,9 @@ Whenever modifications or new files are introduced, the agent must strictly exec
 
 Commits to `main` trigger automated releases via `scripts/release.ts`:
 
-- `feat:` or `feat(scope):`: Triggers minor release bump (`v1.x.0`).
-- `fix:` or `perf:`: Triggers patch release bump (`v1.0.x`).
-- `feat!:` or `BREAKING CHANGE:`: Triggers major release bump (`v2.0.0`).
+- `feat:` or `feat(scope):`: Triggers minor release bump (`v2.x.0`).
+- `fix:` or `perf:`: Triggers patch release bump (`v2.0.x`).
+- `feat!:` or `BREAKING CHANGE:`: Triggers major release bump (`v3.0.0`).
 - `chore:`, `docs:`, `ci:`, `test:`, `refactor:`: Do NOT trigger a release bump.
 
 ---
@@ -33,4 +33,4 @@ Commits to `main` trigger automated releases via `scripts/release.ts`:
 
 - AI agents and developers must NEVER execute `git tag` or push tags manually to remote.
 - The GitHub Actions release workflow (`.github/workflows/release.yml`) is the sole SSOT for calculating semantic versions, creating git tags, and publishing GitHub Releases.
-- Local environments must synchronize tags exclusively via `git fetch origin --tags --force` (required for the force-updated floating major tag `v1`). Editor Sync/Pull operations rely on `.vscode/settings.json` (`git.replaceTagsWhenPull: true`, `git.followTagsWhenSync: false`) to resolve floating tag conflicts automatically.
+- Local environments must synchronize tags exclusively via `git fetch origin --tags --force` (required for the force-updated floating major tag `v2`). Editor Sync/Pull operations rely on `.vscode/settings.json` (`git.replaceTagsWhenPull: true`, `git.followTagsWhenSync: false`) to resolve floating tag conflicts automatically.

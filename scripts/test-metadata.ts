@@ -58,29 +58,20 @@ validateFile("actions/setup-playwright/action.yml", (content, errors) => {
   if (!content.includes("using: composite")) {
     errors.push("Must use composite action run type");
   }
-  if (!content.includes("PLAYWRIGHT_BROWSERS_PATH")) {
-    errors.push("Must configure PLAYWRIGHT_BROWSERS_PATH");
+  if (content.includes("inputs:")) {
+    errors.push("Must not expose inputs in zero-config setup-playwright v2");
   }
-  if (!content.includes("actions/cache@v6")) {
-    errors.push("Must use actions/cache@v6 for browser cache");
+  if (!content.includes("vp exec playwright install --with-deps chromium")) {
+    errors.push("Must run vp exec playwright install --with-deps chromium on Linux");
   }
-  if (!content.includes("tr -d '\\r'")) {
-    errors.push("Must strip carriage returns from version output for Windows safety");
+  if (!content.includes("vp exec playwright install chromium")) {
+    errors.push("Must run vp exec playwright install chromium on non-Linux platforms");
   }
-  if (!content.includes("install-deps:")) {
-    errors.push("Missing install-deps input in setup-playwright");
+  if (!content.includes("runner.os == 'Linux'") || !content.includes("runner.os != 'Linux'")) {
+    errors.push("Must select platform-specific Playwright install steps via runner.os");
   }
-  if (!content.includes("Configure Linux APT resilience")) {
-    errors.push("Missing Configure Linux APT resilience step");
-  }
-  if (!content.includes("/etc/apt/apt-mirrors.txt")) {
-    errors.push("Must configure /etc/apt/apt-mirrors.txt for GitHub Actions Ubuntu runners");
-  }
-  if (content.includes("python3")) {
-    errors.push("Must not depend on python3 for APT mirror configuration");
-  }
-  if (content.includes("/etc/resolv.conf")) {
-    errors.push("Must not mutate /etc/resolv.conf globally");
+  if (content.includes("actions/cache")) {
+    errors.push("Must not cache browser binaries in setup-playwright v2");
   }
 });
 
@@ -103,6 +94,15 @@ validateFile(".github/workflows/vp-web-ci.yml", (content, errors) => {
       "vp-web-ci.yml must use pinned runner versions, prohibited floating *-latest runners",
     );
   }
+  if (!content.includes("Florencea/vp-actions/actions/setup-vp-env@v2")) {
+    errors.push("vp-web-ci.yml must use Florencea/vp-actions/actions/setup-vp-env@v2");
+  }
+  if (!content.includes("Florencea/vp-actions/actions/setup-playwright@v2")) {
+    errors.push("vp-web-ci.yml must use Florencea/vp-actions/actions/setup-playwright@v2");
+  }
+  if (/Florencea\/vp-actions\/[^\s]+@v1\b/.test(content)) {
+    errors.push("vp-web-ci.yml must not reference stale @v1 actions");
+  }
   // Ensure platform-compat includes Setup Playwright Browsers
   const platformCompatIndex = content.indexOf("platform-compat:");
   if (platformCompatIndex === -1) {
@@ -113,11 +113,11 @@ validateFile(".github/workflows/vp-web-ci.yml", (content, errors) => {
       errors.push('platform-compat must include "Setup Playwright Browsers" step');
     }
     const hasPlaywrightAction = content.includes(
-      "actions/setup-playwright@v1",
+      "actions/setup-playwright@v2",
       platformCompatIndex,
     );
     if (!hasPlaywrightAction) {
-      errors.push("platform-compat must use actions/setup-playwright@v1");
+      errors.push("platform-compat must use actions/setup-playwright@v2");
     }
   }
 });
