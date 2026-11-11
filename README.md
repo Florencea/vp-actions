@@ -137,8 +137,9 @@ Workflows and actions adhere to Semantic Versioning with automated pipeline exec
 
 The repository operates on a single source of truth (SSOT) automated release workflow (`.github/workflows/release.yml`) executed exclusively on GitHub Actions:
 
-1. **Continuous Release on `main`**:
-   - Pushes to the `main` branch evaluate Conventional Commits since the latest release tag.
+1. **CI-Gated Continuous Release on `main`**:
+   - Pushes to the `main` branch first execute the `CI` workflow (`.github/workflows/test-actions.yml`).
+   - Only when `CI` completes with `success` does `.github/workflows/release.yml` trigger via `workflow_run` to evaluate Conventional Commits since the latest release tag.
    - `fix:` / `perf:` triggers a patch release (`v1.2.1`).
    - `feat:` triggers a minor release (`v1.3.0`).
    - `BREAKING CHANGE:` or `feat!:` triggers a major release (`v2.0.0`).

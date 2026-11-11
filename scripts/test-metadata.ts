@@ -121,6 +121,24 @@ validateFile(".github/workflows/release.yml", (content, errors) => {
   if (!content.includes("workflow_dispatch:")) {
     errors.push("release.yml must support workflow_dispatch trigger");
   }
+  if (!content.includes("workflow_run:")) {
+    errors.push("release.yml must declare workflow_run trigger dependent on CI");
+  }
+  if (!content.includes('workflows: ["CI"]')) {
+    errors.push('release.yml workflow_run must monitor the "CI" workflow');
+  }
+  if (!content.includes("workflow_run.event == 'push'")) {
+    errors.push("release.yml must ensure workflow_run is triggered only by CI push events");
+  }
+  if (!content.includes("head_repository.full_name == github.repository")) {
+    errors.push("release.yml must verify head_repository matches github.repository");
+  }
+  if (!content.includes("workflow_run.conclusion == 'success'")) {
+    errors.push("release.yml must verify workflow_run.conclusion == 'success'");
+  }
+  if (/^\s*push:\s*$/m.test(content)) {
+    errors.push("release.yml must not trigger directly on push; it must follow CI completion");
+  }
   if (!content.includes("timeout-minutes: 15")) {
     errors.push("release.yml must declare timeout-minutes: 15");
   }

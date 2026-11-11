@@ -75,7 +75,7 @@ This repository operates on a single source of truth (SSOT) automated release mo
    - Commits prefixed with `fix:` or `perf:` trigger a patch version bump (e.g. `v1.2.1`, updating `v1`).
    - Commits prefixed with `chore:`, `docs:`, `ci:`, or `test:` do not trigger a release.
 2. **Local Tagging Prohibition & CI SSOT**:
-   - Creating or pushing version tags manually from local environments is strictly prohibited. Version calculation, git tagging, and GitHub Releases are executed exclusively by `.github/workflows/release.yml` upon push to `main`.
+   - Creating or pushing version tags manually from local environments is strictly prohibited. Version calculation, git tagging, and GitHub Releases are executed exclusively by `.github/workflows/release.yml`, triggered automatically via `workflow_run` only after the `CI` workflow (`.github/workflows/test-actions.yml`) succeeds on `main`.
    - Local environments synchronize tags using `git fetch origin --tags`.
 3. **Major Floating Tag Invariant**:
    - Consumer applications pin to the major floating tag (e.g. `uses: Florencea/vp-actions/actions/setup-vp-env@v1`).
