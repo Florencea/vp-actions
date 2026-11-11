@@ -118,10 +118,11 @@ jobs:
 
 #### `actions/setup-playwright` Inputs
 
-| Input           | Type     | Default               | Description                                       |
-| :-------------- | :------- | :-------------------- | :------------------------------------------------ |
-| `browser`       | `string` | `"chromium"`          | Browser family to install system dependencies for |
-| `setup-command` | `string` | `"vp run test:setup"` | Script executed when browser binary cache misses  |
+| Input           | Type     | Default               | Description                                          |
+| :-------------- | :------- | :-------------------- | :--------------------------------------------------- |
+| `browser`       | `string` | `"chromium"`          | Browser family to install system dependencies for    |
+| `install-deps`  | `string` | `"true"`              | Whether to install Linux system dependencies via apt |
+| `setup-command` | `string` | `"vp run test:setup"` | Script executed when browser binary cache misses     |
 
 ---
 

@@ -67,6 +67,12 @@ validateFile("actions/setup-playwright/action.yml", (content, errors) => {
   if (!content.includes("tr -d '\\r'")) {
     errors.push("Must strip carriage returns from version output for Windows safety");
   }
+  if (!content.includes("install-deps:")) {
+    errors.push("Missing install-deps input in setup-playwright");
+  }
+  if (!content.includes("Configure Linux APT resilience")) {
+    errors.push("Missing Configure Linux APT resilience step");
+  }
 });
 
 // 3. Validate .github/workflows/vp-web-ci.yml

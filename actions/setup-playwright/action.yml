@@ -6,6 +6,10 @@ inputs:
     description: Playwright browser to install (e.g. chromium)
     required: false
     default: chromium
+  install-deps:
+    description: Whether to install Linux system dependencies
+    required: false
+    default: "true"
   setup-command:
     description: Command used to install browser binaries
     required: false
@@ -37,7 +41,44 @@ runs:
       shell: bash
       run: ${{ inputs.setup-command }}
 
-    - name: Install Playwright system dependencies on Linux
-      if: runner.os == 'Linux'
+    - name: Configure Linux APT resilience
+      if: runner.os == 'Linux' && inputs.install-deps == 'true'
       shell: bash
-      run: vp exec playwright install-deps ${{ inputs.browser }}
+      run: |
+        sudo python3 -c '
+        import glob, pathlib
+        patterns = ["/etc/apt/sources.list", "/etc/apt/sources.list.d/*.sources", "/etc/apt/sources.list.d/*.list"]
+        for pattern in patterns:
+            for path_str in glob.glob(pattern):
+                p = pathlib.Path(path_str)
+                if p.is_file():
+                    try:
+                        text = p.read_text(encoding="utf-8", errors="ignore")
+                        if "azure.archive.ubuntu.com" in text:
+                            p.write_text(text.replace("azure.archive.ubuntu.com", "archive.ubuntu.com"), encoding="utf-8")
+                    except Exception:
+                        pass
+        ' || true
+        sudo mkdir -p /etc/apt/apt.conf.d
+        echo 'Acquire::Retries "3";
+        Acquire::http::Timeout "30";
+        Acquire::https::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/80-playwright-retries >/dev/null || true
+        echo 'nameserver 8.8.8.8
+        nameserver 1.1.1.1' | sudo tee -a /etc/resolv.conf >/dev/null || true
+
+    - name: Install Playwright system dependencies on Linux
+      if: runner.os == 'Linux' && inputs.install-deps == 'true'
+      shell: bash
+      run: |
+        for attempt in 1 2 3; do
+          echo "Attempt $attempt: installing Playwright system dependencies for ${{ inputs.browser }}..."
+          if vp exec playwright install-deps ${{ inputs.browser }}; then
+            exit 0
+          fi
+          if [ "$attempt" -lt 3 ]; then
+            echo "Attempt $attempt failed. Waiting 5s before retry..." >&2
+            sleep 5
+          fi
+        done
+        echo "Failed to install Playwright dependencies after 3 attempts." >&2
+        exit 1
