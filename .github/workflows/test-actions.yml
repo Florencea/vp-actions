@@ -27,12 +27,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
       - name: Setup Vite+
-        uses: voidzero-dev/setup-vp@v1
+        uses: voidzero-dev/setup-vp@v1.22.0
         with:
           node-version-file: package.json
           cache: true
@@ -41,7 +41,7 @@ jobs:
         run: vp install
 
       - name: Lint Workflows and Actions (actionlint)
-        uses: raven-actions/actionlint@v2
+        uses: raven-actions/actionlint@v2.2.0
 
       - name: Validate TypeScript and Lint
         run: |

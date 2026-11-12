@@ -44,13 +44,13 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository && github.event.workflow_run.conclusion == 'success') }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
           ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - name: Setup Vite+
-        uses: voidzero-dev/setup-vp@v1
+        uses: voidzero-dev/setup-vp@v1.22.0
         with:
           node-version-file: package.json
           cache: true
@@ -59,7 +59,7 @@ jobs:
         run: vp install
 
       - name: Lint Workflows (actionlint)
-        uses: raven-actions/actionlint@v2
+        uses: raven-actions/actionlint@v2.2.0
 
       - name: Gatekeeper Validation (Action Metadata)
         run: |

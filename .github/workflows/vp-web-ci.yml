@@ -42,16 +42,16 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Vite+ Environment
-        uses: Florencea/vp-actions/actions/setup-vp-env@v2
+        uses: Florencea/vp-actions/actions/setup-vp-env@v2.0.0
         with:
           checkout: "false"
 
       - name: Setup Playwright Browsers
         if: inputs.enable-e2e
-        uses: Florencea/vp-actions/actions/setup-playwright@v2
+        uses: Florencea/vp-actions/actions/setup-playwright@v2.0.0
 
       - name: Execute Pre-test Hook
         if: inputs.pre-test-command != ''
@@ -75,7 +75,7 @@ jobs:
 
       - name: Upload Test Artifacts on Failure
         if: failure() && inputs.enable-e2e
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: e2e-artifacts-${{ runner.os }}-${{ runner.arch }}
           retention-days: 7
@@ -98,16 +98,16 @@ jobs:
           - macos-26
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Vite+ Environment
-        uses: Florencea/vp-actions/actions/setup-vp-env@v2
+        uses: Florencea/vp-actions/actions/setup-vp-env@v2.0.0
         with:
           checkout: "false"
 
       - name: Setup Playwright Browsers
         if: inputs.enable-e2e
-        uses: Florencea/vp-actions/actions/setup-playwright@v2
+        uses: Florencea/vp-actions/actions/setup-playwright@v2.0.0
 
       - name: Execute Pre-test Hook
         if: inputs.pre-test-command != ''
@@ -121,7 +121,7 @@ jobs:
 
       - name: Upload Test Artifacts on Failure
         if: failure() && inputs.enable-e2e
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: e2e-artifacts-${{ matrix.os }}-${{ runner.arch }}
           retention-days: 7
