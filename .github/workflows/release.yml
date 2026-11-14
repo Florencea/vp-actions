@@ -63,7 +63,7 @@ jobs:
 
       - name: Gatekeeper Validation (Action Metadata)
         run: |
-          vp lint
+          vp check
           vpr typecheck
           vpr agent:test:unit
 

@@ -17,7 +17,7 @@ description: Git commit prohibition, three-tier verification delivery pipeline, 
 Whenever modifications or new files are introduced, the agent must strictly execute the following steps:
 
 1. **Verification**: Run `vpr agent:verify:gate` to verify TypeScript types, Oxlint rules, actionlint, formatting, Vitest tests, and release dry-run.
-2. **Formatting**: Run `vpr format` to format modified files using `oxfmt`.
+2. **Formatting**: Run `vp fmt` to format modified files using `oxfmt`.
 3. **Staging**: Execute explicit file staging: `git add <file1> <file2> ...`. Never use unvetted `git add .` or wildcards that could capture untracked temporary files.
 4. **Command Output**: Provide the exact `git commit -m "type(scope): concise imperative description"` command formatted according to Conventional Commits for the user to execute manually in their terminal.
 

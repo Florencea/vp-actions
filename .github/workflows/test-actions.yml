@@ -43,16 +43,13 @@ jobs:
       - name: Lint Workflows and Actions (actionlint)
         uses: raven-actions/actionlint@v2.2.0
 
-      - name: Validate TypeScript and Lint
+      - name: Validate Format, Lint, and TypeScript
         run: |
-          vp lint
+          vp check
           vpr typecheck
 
       - name: Run Unit Tests (Vitest)
         run: vpr agent:test:unit
-
-      - name: Check Code and Docs Formatting
-        run: vpr format:check
 
       - name: Test Release Automation (Dry Run)
         run: vpx ./scripts/release.ts --dry-run --bump=patch

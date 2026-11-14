@@ -17,11 +17,15 @@ const PackageJsonSchema = z.object({
 
 const REQUIRED_SCRIPTS = [
   "agent:lint:ci",
-  "agent:lint:fix",
   "agent:test:unit",
   "agent:verify:gate",
   "agent:verify:inner",
   "agent:verify:unit",
+  "typecheck",
+] as const;
+
+const FORBIDDEN_REDUNDANT_SCRIPTS = [
+  "agent:lint:fix",
   "check:fast",
   "format",
   "format:check",
@@ -30,7 +34,6 @@ const REQUIRED_SCRIPTS = [
   "release",
   "test",
   "test:unit",
-  "typecheck",
   "verify",
 ] as const;
 
@@ -69,6 +72,11 @@ describe("package.json", () => {
         `Missing required script "${scriptName}"`,
       ).toBeDefined();
     }
-    expect(parsedPackage.data.scripts["test"]).toBe("vp test run");
+    for (const scriptName of FORBIDDEN_REDUNDANT_SCRIPTS) {
+      expect(
+        parsedPackage.data.scripts[scriptName],
+        `Redundant script "${scriptName}" should use vp directly`,
+      ).toBeUndefined();
+    }
   });
 });
