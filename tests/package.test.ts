@@ -16,11 +16,14 @@ const PackageJsonSchema = z.object({
 });
 
 const REQUIRED_SCRIPTS = [
+  "agent:actions:check",
+  "agent:actions:upgrade",
   "agent:lint:ci",
   "agent:test:unit",
   "agent:verify:gate",
   "agent:verify:inner",
   "agent:verify:unit",
+  "release:publish",
   "typecheck",
 ] as const;
 

@@ -10,7 +10,10 @@
     "agent:verify:gate": "vpr agent:verify:unit && vpx ./scripts/release.ts --dry-run --bump=auto",
     "agent:verify:inner": "vp check && vpr typecheck && vpr agent:lint:ci",
     "agent:verify:unit": "vpr agent:verify:inner && vpr agent:test:unit",
-    "typecheck": "tsc -b --pretty false"
+    "typecheck": "tsc -b --pretty false",
+    "agent:actions:check": "vpx ./scripts/upgrade-actions.ts --dry-run",
+    "agent:actions:upgrade": "vpx ./scripts/upgrade-actions.ts",
+    "release:publish": "vpx ./scripts/publish-release.ts"
   },
   "devDependencies": {
     "@types/node": "26.6.6",

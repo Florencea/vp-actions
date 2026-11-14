@@ -19,15 +19,15 @@ This project uses Vite+ to manage development tools. Always use `vp` (or `vpr` s
 
 `vp-actions` provides modular GitHub Actions and Reusable Workflows for Vite+ applications.
 
-| Layer                  | Path                                   | Responsibility                                                                        |
-| :--------------------- | :------------------------------------- | :------------------------------------------------------------------------------------ |
-| **Composite Actions**  | `actions/setup-vp-env/`                | Installs Node.js with Vite+, installs dependencies, and manages the Vite Task Cache   |
-| **Composite Actions**  | `actions/setup-playwright/`            | Installs Playwright Chromium binaries and Linux OS dependencies                       |
-| **Reusable Workflows** | `.github/workflows/vp-web-ci.yml`      | Standard three-tier verification gate for web apps (`ubuntu-24.04`)                   |
-| **Reusable Workflows** | `.github/workflows/vp-electron-ci.yml` | Electron gatekeeper (`ubuntu-24.04`) and OS matrix (`macos-26`, `windows-2025`)       |
-| **Automation Scripts** | `scripts/`                             | Release CLI (`release.ts`) and pure SemVer calculation module (`lib/release-core.ts`) |
-| **Test Suite**         | `tests/`                               | Vitest invariant tests (`workflows.test.ts`, `package.test.ts`, `release.test.ts`)    |
-| **Modular Rules**      | `.agents/rules/`                       | Domain rules for Git delivery (`git-delivery.md`) and Actions (`actions.md`)          |
+| Layer                  | Path                                   | Responsibility                                                                                                                                         |
+| :--------------------- | :------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Composite Actions**  | `actions/setup-vp-env/`                | Installs Node.js with Vite+, installs dependencies, and manages the Vite Task Cache                                                                    |
+| **Composite Actions**  | `actions/setup-playwright/`            | Installs Playwright Chromium binaries and Linux OS dependencies                                                                                        |
+| **Reusable Workflows** | `.github/workflows/vp-web-ci.yml`      | Standard three-tier verification gate for web apps (`ubuntu-24.04`)                                                                                    |
+| **Reusable Workflows** | `.github/workflows/vp-electron-ci.yml` | Electron gatekeeper (`ubuntu-24.04`) and OS matrix (`macos-26`, `windows-2025`)                                                                        |
+| **Automation Scripts** | `scripts/`                             | Release CLI (`release.ts`), action upgrade helper (`upgrade-actions.ts`), human publish orchestrator (`publish-release.ts`), and pure modules (`lib/`) |
+| **Test Suite**         | `tests/`                               | Vitest invariant tests (`workflows.test.ts`, `package.test.ts`, `release.test.ts`, `actions-upgrade.test.ts`)                                          |
+| **Modular Rules**      | `.agents/rules/`                       | Domain rules for Git delivery (`git-delivery.md`) and Actions (`actions.md`)                                                                           |
 
 ---
 
@@ -42,6 +42,13 @@ vpr agent:verify:unit
 
 # Tier 3: Full gatekeeper (unit verification + release dry-run)
 vpr agent:verify:gate
+
+# External actions dependency check & upgrade (stages with git add only; exit 2 on API break)
+vpr agent:actions:check
+vpr agent:actions:upgrade
+
+# Human-only interactive publish & remote tag polling orchestrator (requires TTY)
+vpr release:publish
 ```
 
 ---
