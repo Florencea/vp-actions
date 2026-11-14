@@ -83,8 +83,10 @@ validateFile(".github/workflows/vp-web-ci.yml", (content, errors) => {
   if (!content.includes("gatekeeper:")) {
     errors.push("Missing gatekeeper job");
   }
-  if (!content.includes("platform-compat:")) {
-    errors.push("Missing platform-compat job");
+  if (content.includes("platform-compat:") || content.includes("enable-platform-compat")) {
+    errors.push(
+      "vp-web-ci.yml must not define platform-compat job or enable-platform-compat input",
+    );
   }
   if (
     /runs-on:\s*.*-latest/i.test(content) ||
@@ -103,21 +105,50 @@ validateFile(".github/workflows/vp-web-ci.yml", (content, errors) => {
   if (/Florencea\/vp-actions\/[^\s]+@v1\b/.test(content)) {
     errors.push("vp-web-ci.yml must not reference stale @v1 actions");
   }
-  // Ensure platform-compat includes Setup Playwright Browsers
-  const platformCompatIndex = content.indexOf("platform-compat:");
-  if (platformCompatIndex === -1) {
-    errors.push("Missing platform-compat definition");
-  } else {
-    const hasPlaywrightStep = content.includes("Setup Playwright Browsers", platformCompatIndex);
-    if (!hasPlaywrightStep) {
-      errors.push('platform-compat must include "Setup Playwright Browsers" step');
-    }
-    const hasPlaywrightAction = content.includes(
-      "actions/setup-playwright@v2",
-      platformCompatIndex,
+});
+
+// 4. Validate .github/workflows/vp-electron-ci.yml
+validateFile(".github/workflows/vp-electron-ci.yml", (content, errors) => {
+  if (!content.includes("workflow_call:")) {
+    errors.push("Must be a reusable workflow (workflow_call)");
+  }
+  if (!content.includes("gatekeeper:")) {
+    errors.push("Missing gatekeeper job");
+  }
+  if (!content.includes("platform-package:")) {
+    errors.push("Missing platform-package job");
+  }
+  if (
+    /runs-on:\s*.*-latest/i.test(content) ||
+    /-\s*(?:ubuntu|windows|macos)-latest/i.test(content)
+  ) {
+    errors.push(
+      "vp-electron-ci.yml must use pinned runner versions, prohibited floating *-latest runners",
     );
-    if (!hasPlaywrightAction) {
-      errors.push("platform-compat must use actions/setup-playwright@v2");
+  }
+  for (const runner of ["ubuntu-24.04", "macos-26", "windows-2025"]) {
+    if (!content.includes(runner)) {
+      errors.push(`vp-electron-ci.yml must pin runner "${runner}"`);
+    }
+  }
+  if (!content.includes("Florencea/vp-actions/actions/setup-vp-env@v2")) {
+    errors.push("vp-electron-ci.yml must use Florencea/vp-actions/actions/setup-vp-env@v2");
+  }
+  if (!content.includes("Florencea/vp-actions/actions/setup-playwright@v2")) {
+    errors.push("vp-electron-ci.yml must use Florencea/vp-actions/actions/setup-playwright@v2");
+  }
+  if (/Florencea\/vp-actions\/[^\s]+@v1\b/.test(content)) {
+    errors.push("vp-electron-ci.yml must not reference stale @v1 actions");
+  }
+  for (const cmd of [
+    "vp run --no-cache app:pack",
+    "xvfb-run --auto-servernum vp run agent:test:e2e",
+    "vp run --no-cache app:linux",
+    "vp run --no-cache app:mac",
+    "vp run --no-cache app:win",
+  ]) {
+    if (!content.includes(cmd)) {
+      errors.push(`vp-electron-ci.yml must include "${cmd}"`);
     }
   }
 });

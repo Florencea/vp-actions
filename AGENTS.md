@@ -19,13 +19,14 @@ This project uses Vite+ to manage development tools. Always use `vp` (or `vpr` s
 
 `vp-actions` provides shared, modular GitHub Actions and Reusable Workflows for Vite+ applications.
 
-| Layer                  | Path                              | Responsibility                                                                                   |
-| :--------------------- | :-------------------------------- | :----------------------------------------------------------------------------------------------- |
-| **Composite Actions**  | `actions/setup-vp-env/`           | Installs Node.js with Vite+, installs dependencies, and manages the Vite Task Cache              |
-| **Composite Actions**  | `actions/setup-playwright/`       | Installs Playwright Chromium binaries and Linux OS dependencies                                  |
-| **Reusable Workflows** | `.github/workflows/vp-web-ci.yml` | Standard three-tier verification gate with cross-platform matrix support (`platform-compat`)     |
-| **Automation Scripts** | `scripts/`                        | Release calculation (`release.ts`) and action metadata integrity validation (`test-metadata.ts`) |
-| **Modular Rules**      | `.agents/rules/`                  | Domain-specific rules for Git delivery and Action maintenance triggered via file globbing        |
+| Layer                  | Path                                   | Responsibility                                                                                   |
+| :--------------------- | :------------------------------------- | :----------------------------------------------------------------------------------------------- |
+| **Composite Actions**  | `actions/setup-vp-env/`                | Installs Node.js with Vite+, installs dependencies, and manages the Vite Task Cache              |
+| **Composite Actions**  | `actions/setup-playwright/`            | Installs Playwright Chromium binaries and Linux OS dependencies                                  |
+| **Reusable Workflows** | `.github/workflows/vp-web-ci.yml`      | Standard three-tier verification gate for web apps (`ubuntu-24.04`)                              |
+| **Reusable Workflows** | `.github/workflows/vp-electron-ci.yml` | Electron verification gate (`ubuntu-24.04`) and OS packaging matrix (`macos-26`, `windows-2025`) |
+| **Automation Scripts** | `scripts/`                             | Release calculation (`release.ts`) and action metadata integrity validation (`test-metadata.ts`) |
+| **Modular Rules**      | `.agents/rules/`                       | Domain-specific rules for Git delivery and Action maintenance triggered via file globbing        |
 
 ---
 
@@ -80,9 +81,9 @@ This repository operates on a single source of truth (SSOT) automated release mo
 3. **Major Floating Tag Invariant**:
    - Consumer applications pin to the major floating tag (e.g. `uses: Florencea/vp-actions/actions/setup-vp-env@v2`).
    - The release script automatically advances the major floating tag (`v2`) to point to the latest semantic release tag.
-4. **Runner Version Pinning & Platform Compatibility**:
-   - Workflows must strictly use pinned runner versions: `gatekeeper` uses `ubuntu-24.04`, and `platform-compat` uses `windows-2025` and `macos-26`. Floating `*-latest` runner labels are strictly prohibited across all workflows.
-   - `platform-compat` (`windows-2025`, `macos-26`) must initialize Playwright via `actions/setup-playwright` whenever browser or unit tests require browser binaries.
+4. **Runner Version Pinning & Electron Platform Packaging**:
+   - Workflows must strictly use pinned runner versions: `gatekeeper` uses `ubuntu-24.04`, and `vp-electron-ci.yml`'s `platform-package` matrix uses `macos-26` and `windows-2025`. Floating `*-latest` runner labels are strictly prohibited across all workflows.
+   - `vp-web-ci.yml` runs strictly on `ubuntu-24.04` without a cross-platform matrix. `vp-electron-ci.yml` (`platform-package`) initializes Playwright via `actions/setup-playwright` when `enable-playwright` is enabled.
 5. **Node.js Engine Exact Invariant**:
    - `package.json` pins `engines.node` to exact `"26.13.0"` matching all `vp-*` ecosystem projects.
 

@@ -10,7 +10,8 @@ This repository provides a two-tier CI architecture:
    - `actions/setup-vp-env`: Installs Node.js with Vite+, installs dependencies, and manages the Vite Task Cache (`node_modules/.vite/task-cache`).
    - `actions/setup-playwright`: Installs Playwright Chromium and Linux system dependencies.
 2. **Tier 2: Reusable Workflows (Standards Gate)**
-   - `.github/workflows/vp-web-ci.yml`: Standard three-tier verification gate (`agent:verify:inner` -> `agent:test:unit` -> `vp build` -> `agent:test:e2e`), with support for pre-test hooks and cross-platform matrix testing.
+   - `.github/workflows/vp-web-ci.yml`: Standard three-tier verification gate (`agent:verify:inner` -> `agent:test:unit` -> `vp build` -> `agent:test:e2e`) on `ubuntu-24.04`.
+   - `.github/workflows/vp-electron-ci.yml`: Standard Electron verification gate (`ubuntu-24.04`) and OS-specific packaging matrix (`macos-26`, `windows-2025`).
 
 ---
 
@@ -40,7 +41,7 @@ permissions:
 jobs:
   ci:
     name: Gatekeeper
-    uses: Florencea/vp-actions/.github/workflows/vp-web-ci.yml@v2
+    uses: Florencea/vp-actions/.github/workflows/vp-web-ci.yml@v3.0.0
     with:
       # Optional: Command executed before test phases (e.g. database seed)
       pre-test-command: vp run db:seed
@@ -48,22 +49,58 @@ jobs:
       build-command: vp build
       # Optional: Toggle E2E browser tests (default: true)
       enable-e2e: true
-      # Optional: Toggle platform compatibility testing on Windows and macOS (default: false)
-      enable-platform-compat: true
 ```
 
-#### Reusable Workflow Inputs
+#### `vp-web-ci.yml` Inputs
 
-| Input                    | Type      | Default      | Description                                                                |
-| :----------------------- | :-------- | :----------- | :------------------------------------------------------------------------- |
-| `pre-test-command`       | `string`  | `""`         | Hook executed immediately before linting and testing (e.g. database setup) |
-| `build-command`          | `string`  | `"vp build"` | Production build command                                                   |
-| `enable-e2e`             | `boolean` | `true`       | Whether to run Playwright E2E browser tests                                |
-| `enable-platform-compat` | `boolean` | `false`      | Runs a secondary matrix job on `windows-2025` and `macos-26`               |
+| Input              | Type      | Default      | Description                                                                |
+| :----------------- | :-------- | :----------- | :------------------------------------------------------------------------- |
+| `pre-test-command` | `string`  | `""`         | Hook executed immediately before linting and testing (e.g. database setup) |
+| `build-command`    | `string`  | `"vp build"` | Production build command                                                   |
+| `enable-e2e`       | `boolean` | `true`       | Whether to run Playwright E2E browser tests                                |
 
 ---
 
-### 2. Specialized Workflows (Composite Actions)
+### 2. Electron Applications (Reusable Workflow)
+
+For Electron applications requiring Linux E2E smoke testing (`xvfb-run`) and OS-specific packaging verification across Linux (`ubuntu-24.04`), macOS (`macos-26`), and Windows (`windows-2025`), following standard `package.json` scripts (`agent:verify:inner`, `check:deadcode`, `agent:test:unit`, `build:all`, `app:pack`, `agent:test:e2e`, `app:linux`, `app:mac`, `app:win`):
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Gatekeeper & Package
+    uses: Florencea/vp-actions/.github/workflows/vp-electron-ci.yml@v3.0.0
+```
+
+#### `vp-electron-ci.yml` Inputs
+
+| Input               | Type      | Default              | Description                                                               |
+| :------------------ | :-------- | :------------------- | :------------------------------------------------------------------------ |
+| `pre-test-command`  | `string`  | `""`                 | Hook executed immediately before linting and testing                      |
+| `build-command`     | `string`  | `"vp run build:all"` | Production build command for Electron main, preload, and renderer         |
+| `enable-playwright` | `boolean` | `true`               | Whether to install Playwright Chromium browsers                           |
+| `enable-e2e`        | `boolean` | `true`               | Whether to pack unpacked app and run `xvfb-run` E2E smoke tests           |
+| `enable-package`    | `boolean` | `true`               | Whether to test OS-specific packaging (`app:linux`, `app:mac`, `app:win`) |
+
+---
+
+### 3. Specialized Workflows (Composite Actions)
 
 For applications requiring customized runner environments, virtual framebuffers (e.g. `xvfb-run`), or platform packaging (e.g. Electron):
 
