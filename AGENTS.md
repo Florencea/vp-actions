@@ -55,7 +55,8 @@ vpr release:publish
 
 ## 3. Repository SSOT Invariants
 
-- **Git Delivery**: AI agents must never run `git commit` or `git push`. Verify via `vpr agent:verify:gate`, format via `vp fmt`, stage explicitly with `git add <files>`, and output a Conventional Commit command for manual signing.
+- **Git Delivery**: AI agents must never run `git commit` or `git push`. Verify via `vpr agent:verify:gate`, format via `vp fmt`, stage explicitly with `git add <files>`, and output a single-quoted Conventional Commit command (`git commit -m '...'`) for manual signing.
+- **External Actions Upgrades**: `vpr agent:actions:upgrade` treats runtime-only updates (such as `runs.using` Node.js bumps) as non-breaking when upstream `inputs`/`outputs` and downstream CI contracts remain compatible, staging updates with `git add` for a minor release via `feat(actions):` and halting with exit code `2` on breaking API changes.
 - **Release Pipeline**: Automated version tagging and GitHub Releases run exclusively in `.github/workflows/release.yml` via `workflow_run` after `CI` succeeds on `main`. Never create or push tags locally; sync with `git fetch origin --tags --force`.
 - **Node.js Engine Pinning**: `package.json` pins `engines.node` to an exact `major.minor.patch` SemVer (without range prefixes), validated via `verkit`.
 - **Action & Runner Pinning**: All `actions/*.yml` and `.github/workflows/*.yml` pin exact `vX.Y.Z` Action tags and pinned runners (`ubuntu-24.04`, `macos-26`, `windows-2025`); `*-latest` runners are prohibited.

@@ -102,45 +102,6 @@ jobs:
 
 ### 3. Specialized Workflows (Composite Actions)
 
-For Electron applications requiring Linux E2E smoke testing (`xvfb-run`) and OS-specific packaging verification across Linux (`ubuntu-24.04`), macOS (`macos-26`), and Windows (`windows-2025`), following standard `package.json` scripts (`agent:verify:inner`, `check:deadcode`, `agent:test:unit`, `build:all`, `app:pack`, `agent:test:e2e`, `app:linux`, `app:mac`, `app:win`):
-
-```yaml
-name: CI
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
-
-permissions:
-  contents: read
-
-jobs:
-  ci:
-    name: Gatekeeper & Package
-    uses: Florencea/vp-actions/.github/workflows/vp-electron-ci.yml@v3.0.0
-```
-
-#### `vp-electron-ci.yml` Inputs
-
-| Input               | Type      | Default              | Description                                                               |
-| :------------------ | :-------- | :------------------- | :------------------------------------------------------------------------ |
-| `pre-test-command`  | `string`  | `""`                 | Hook executed immediately before linting and testing                      |
-| `build-command`     | `string`  | `"vp run build:all"` | Production build command for Electron main, preload, and renderer         |
-| `enable-playwright` | `boolean` | `true`               | Whether to install Playwright Chromium browsers                           |
-| `enable-e2e`        | `boolean` | `true`               | Whether to pack unpacked app and run `xvfb-run` E2E smoke tests           |
-| `enable-package`    | `boolean` | `true`               | Whether to test OS-specific packaging (`app:linux`, `app:mac`, `app:win`) |
-
----
-
-### 3. Specialized Workflows (Composite Actions)
-
 For applications requiring customized runner environments, virtual framebuffers (e.g. `xvfb-run`), or platform packaging (e.g. Electron):
 
 ```yaml
@@ -152,21 +113,24 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   gatekeeper:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Vite+ Environment
-        uses: Florencea/vp-actions/actions/setup-vp-env@v2
+        uses: Florencea/vp-actions/actions/setup-vp-env@v3.0.0
         with:
           checkout: "false"
 
       - name: Setup Playwright Browsers
-        uses: Florencea/vp-actions/actions/setup-playwright@v2
+        uses: Florencea/vp-actions/actions/setup-playwright@v3.0.0
 
       - name: Verification
         run: vp run agent:verify:inner
@@ -188,7 +152,7 @@ jobs:
 
 | Input               | Type     | Default          | Description                            |
 | :------------------ | :------- | :--------------- | :------------------------------------- |
-| `checkout`          | `string` | `"true"`         | Runs `actions/checkout@v7` if true     |
+| `checkout`          | `string` | `"true"`         | Runs `actions/checkout@v7.0.1` if true |
 | `node-version-file` | `string` | `"package.json"` | Path to file containing engine version |
 | `install-command`   | `string` | `"vp install"`   | Package installation command           |
 
@@ -198,12 +162,25 @@ Takes no inputs. Installs Playwright Chromium directly (`vp exec playwright inst
 
 ---
 
+## Maintenance & Verification Scripts
+
+Local verification, dependency upgrades, and supervised releases are managed through Vite+ scripts defined in `package.json`:
+
+- `vpr agent:verify:inner`: Runs `vp check` (Oxfmt + Oxlint), `tsc -b` type checking, and `actionlint`.
+- `vpr agent:verify:unit`: Runs the inner loop followed by the Vitest suite (`tests/*.test.ts`).
+- `vpr agent:verify:gate`: Runs unit verification followed by `vpx ./scripts/release.ts --dry-run --bump=auto`.
+- `vpr agent:actions:check`: Checks external GitHub Actions dependencies against remote `vX.Y.Z` tags and upstream `action.yml` contracts without modifying files (supports `--json`).
+- `vpr agent:actions:upgrade`: Upgrades compatible external actions (including non-breaking major updates whose upstream `inputs`/`outputs` preserve downstream CI behavior), runs `vp fmt` and `vpr agent:verify:gate`, stages modified files with `git add`, and outputs a single-quoted `feat(actions): ...` commit command (exits with code `2` if breaking API changes require manual action edits).
+- `vpr release:publish`: Human-only interactive TTY orchestrator (`scripts/publish-release.ts`) that signs commits, pushes `main`, polls remote tag creation by `release.yml`, runs `git fetch origin --tags --force`, and performs Stage 2 alignment of internal `Florencea/vp-actions/actions/*` references.
+
+---
+
 ## Versioning & Release Strategy
 
 Workflows and actions adhere to Semantic Versioning with automated pipeline execution:
 
-- **Major Floating Tags (`@v2`)**: Consumer workflows pin to `@v2` to automatically receive non-breaking improvements, runtime patches, and security updates. Existing consumers pinned to `@v1` remain unaffected until upgrading to `@v2`.
-- **Specific Release Tags (`@v2.0.0`)**: Used for strict pinning when determinism across minor modifications is desired.
+- **Major Floating Tags (`@v3`)**: Consumer workflows pin to `@v3` to automatically receive non-breaking improvements, runtime patches, and security updates. Existing consumers pinned to `@v2` remain unaffected until upgrading to `@v3`.
+- **Specific Release Tags (`@v3.0.0`)**: Used for strict pinning when determinism across minor modifications is desired.
 
 ### Automated Release Pipeline
 
@@ -212,15 +189,15 @@ The repository operates on a single source of truth (SSOT) automated release wor
 1. **CI-Gated Continuous Release on `main`**:
    - Pushes to the `main` branch first execute the `CI` workflow (`.github/workflows/test-actions.yml`).
    - Only when `CI` completes with `success` does `.github/workflows/release.yml` trigger via `workflow_run` to evaluate Conventional Commits since the latest release tag.
-   - `fix:` / `perf:` triggers a patch release (`v2.0.1`).
-   - `feat:` triggers a minor release (`v2.1.0`).
-   - `BREAKING CHANGE:` or `feat!:` triggers a major release (`v3.0.0`).
-   - The release job automatically updates the corresponding major floating tag (`v2`) to point to the newly published commit.
+   - `fix:` / `perf:` triggers a patch release (`v3.0.1`).
+   - `feat:` triggers a minor release (`v3.1.0`).
+   - `BREAKING CHANGE:` or `feat!:` triggers a major release (`v4.0.0`).
+   - The release job automatically updates the corresponding major floating tag (`v3`) to point to the newly published commit.
 2. **Manual Tagging Prohibition & Local Sync**:
    - Creating or pushing version tags manually from local workstations is strictly prohibited to prevent version skew.
-   - Run `git fetch origin --tags --force` locally to synchronize newly published and force-updated floating tags (`v2`). Workspace `.vscode/settings.json` configures `git.replaceTagsWhenPull` so editor Source Control Sync/Pull updates floating tags without conflict prompts.
+   - Run `git fetch origin --tags --force` locally to synchronize newly published and force-updated floating tags (`v3`). Workspace `.vscode/settings.json` configures `git.replaceTagsWhenPull` so editor Source Control Sync/Pull updates floating tags without conflict prompts.
 3. **Manual Workflow Dispatch**:
-   - Trigger the `Release` workflow from the GitHub Actions tab or CLI.
+   - Trigger the `Release` workflow from the GitHub Actions tab.
    - Choose `bump`: `auto`, `patch`, `minor`, or `major`.
    - Enable `dry_run: true` to simulate release calculation without modifying git tags.
 4. **Local Dry-Run Simulation**:
