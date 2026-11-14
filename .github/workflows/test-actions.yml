@@ -48,8 +48,8 @@ jobs:
           vp lint
           vpr typecheck
 
-      - name: Validate Action Metadata & Configuration
-        run: vpx ./scripts/test-metadata.ts
+      - name: Run Unit Tests (Vitest)
+        run: vpr agent:test:unit
 
       - name: Check Code and Docs Formatting
         run: vpr format:check

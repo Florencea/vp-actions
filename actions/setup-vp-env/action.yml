@@ -20,10 +20,10 @@ runs:
   steps:
     - name: Checkout repository
       if: inputs.checkout == 'true'
-      uses: actions/checkout@v7
+      uses: actions/checkout@v7.0.1
 
     - name: Setup Vite+
-      uses: voidzero-dev/setup-vp@v1
+      uses: voidzero-dev/setup-vp@v1.22.0
       with:
         node-version-file: ${{ inputs.node-version-file }}
         cache: true
@@ -33,7 +33,7 @@ runs:
       run: ${{ inputs.install-command }}
 
     - name: Cache Vite Task Cache
-      uses: actions/cache@v6
+      uses: actions/cache@v6.1.0
       with:
         path: node_modules/.vite/task-cache
         key: ${{ runner.os }}-${{ runner.arch }}-vite-task-cache-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}

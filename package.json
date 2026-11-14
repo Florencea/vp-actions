@@ -5,20 +5,30 @@
   "description": "Shared GitHub Actions and Reusable Workflows for Vite+ applications",
   "type": "module",
   "scripts": {
-    "agent:verify:inner": "vpr typecheck && vp lint && vpr lint:ci && vpr format:check",
-    "agent:verify:gate": "vpr agent:verify:inner && vpr test",
-    "lint": "vp lint",
-    "lint:ci": "actionlint",
-    "typecheck": "tsc -b --pretty false",
+    "agent:lint:ci": "actionlint",
+    "agent:lint:fix": "vp check --fix",
+    "agent:test:unit": "vp test run --reporter=tap-flat --no-color",
+    "agent:verify:gate": "vpr agent:verify:unit && vpx ./scripts/release.ts --dry-run --bump=auto",
+    "agent:verify:inner": "vpr typecheck && vp lint && vpr agent:lint:ci && vpr format:check",
+    "agent:verify:unit": "vpr agent:verify:inner && vpr agent:test:unit",
+    "check:fast": "vpr typecheck && vp lint && vpr agent:test:unit",
     "format": "vp fmt",
     "format:check": "vp fmt --check",
-    "test": "vpx ./scripts/test-metadata.ts",
-    "release": "vpx ./scripts/release.ts"
+    "lint": "vp lint",
+    "lint:ci": "actionlint",
+    "release": "vpx ./scripts/release.ts",
+    "test": "vp test run",
+    "test:unit": "vp test run",
+    "typecheck": "tsc -b --pretty false",
+    "verify": "vp check && vpr agent:lint:ci && vp test run"
   },
   "devDependencies": {
     "@types/node": "26.6.6",
     "typescript": "7.0.2",
-    "vite-plus": "catalog:"
+    "verkit": "0.5.0",
+    "vite-plus": "catalog:",
+    "yaml": "2.9.1",
+    "zod": "4.6.7"
   },
   "engines": {
     "node": "26.13.1"

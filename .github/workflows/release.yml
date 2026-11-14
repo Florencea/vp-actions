@@ -65,7 +65,7 @@ jobs:
         run: |
           vp lint
           vpr typecheck
-          vpx ./scripts/test-metadata.ts
+          vpr agent:test:unit
 
       - name: Execute Release
         env:

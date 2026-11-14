@@ -6,15 +6,18 @@ description: Rules for maintaining and verifying GitHub Actions, Composite Actio
 
 # GitHub Actions & Workflows Maintenance Rules
 
-## 1. Major Floating Tag Invariant
+## 1. Exact SemVer Pinning Invariant
 
-All external GitHub Actions referenced across `actions/**/*.yml` and `.github/workflows/**/*.yml` must reference their authoritative major floating tag:
+All external and internal GitHub Actions referenced across `actions/**/*.yml` and `.github/workflows/**/*.yml` must pin exact SemVer tags (`vX.Y.Z`):
 
-- `actions/checkout@v7`
-- `voidzero-dev/setup-vp@v1`
-- `actions/cache@v6`
-- `actions/upload-artifact@v7`
-- Internal consumer references: `Florencea/vp-actions/actions/setup-vp-env@v2`, `Florencea/vp-actions/actions/setup-playwright@v2`, `Florencea/vp-actions/.github/workflows/vp-web-ci.yml@v3`, `Florencea/vp-actions/.github/workflows/vp-electron-ci.yml@v3`
+- `actions/checkout@v7.0.1`
+- `voidzero-dev/setup-vp@v1.22.0`
+- `actions/cache@v6.1.0`
+- `actions/upload-artifact@v7.0.2`
+- `raven-actions/actionlint@v2.2.0`
+- Internal references: `Florencea/vp-actions/actions/setup-vp-env@v3.0.0`, `Florencea/vp-actions/actions/setup-playwright@v3.0.0`, `Florencea/vp-actions/.github/workflows/vp-web-ci.yml@v3.0.0`, `Florencea/vp-actions/.github/workflows/vp-electron-ci.yml@v3.0.0`
+
+Floating major/minor tags (`@v1`, `@v7`, `@v7.0`) and branch refs (`@main`) are prohibited.
 
 ---
 
@@ -26,7 +29,7 @@ All external GitHub Actions referenced across `actions/**/*.yml` and `.github/wo
 
 ## 3. Shift-Left Local Verification (`actionlint`)
 
-- Every change to workflow or action YAML files must be validated locally using `vpr lint:ci` (`actionlint`) achieving **0 errors and 0 warnings** before staging.
+- Every change to workflow or action YAML files must be validated locally using `vpr agent:lint:ci` (`actionlint`) achieving **0 errors and 0 warnings** before staging.
 - Never embed `actionlint` into remote reusable workflows or production deployment workflows.
 
 ---

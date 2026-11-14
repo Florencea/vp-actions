@@ -1,23 +1,11 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
-
-type BumpType = "major" | "minor" | "patch";
-
-interface SemVer {
-  major: number;
-  minor: number;
-  patch: number;
-}
-
-function parseSemVer(tag: string): SemVer | null {
-  const match = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(tag.trim());
-  if (!match) return null;
-  return {
-    major: Number.parseInt(match[1], 10),
-    minor: Number.parseInt(match[2], 10),
-    patch: Number.parseInt(match[3], 10),
-  };
-}
+import {
+  calculateNextTag,
+  determineBumpFromCommitMessages,
+  sortSemVerTagsDesc,
+  type BumpType,
+} from "./lib/release-core.js";
 
 function runGit(args: string[]): string {
   try {
@@ -34,76 +22,20 @@ function runGit(args: string[]): string {
 }
 
 function getLatestSemverTag(): string | null {
-  const rawTags = runGit(["tag", "-l", "v[0-9]*.[0-9]*.[0-9]*", "--sort=-v:refname"]);
-  if (!rawTags) return null;
-  const tags = rawTags
-    .split("\n")
-    .map((t) => t.trim())
-    .filter((t) => t.length > 0);
-  for (const tag of tags) {
-    if (parseSemVer(tag) !== null) {
-      return tag;
-    }
+  const rawTags = runGit(["tag", "-l", "v[0-9]*.[0-9]*.[0-9]*"]);
+  if (rawTags === "") {
+    return null;
   }
-  return null;
+  const sorted = sortSemVerTagsDesc(rawTags.split("\n"));
+  return sorted[0] ?? null;
 }
 
 function determineBumpFromCommits(fromTag: string): BumpType | null {
   const commitLog = runGit(["log", `${fromTag}..HEAD`, "--oneline"]);
-  if (!commitLog) return null;
-
-  const lines = commitLog
-    .split("\n")
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0);
-  if (lines.length === 0) return null;
-
-  let hasMajor = false;
-  let hasMinor = false;
-  let hasPatch = false;
-
-  for (const line of lines) {
-    // Remove the short commit hash
-    const msg = line.replace(/^[a-f0-9]+\s+/i, "");
-
-    // Check for breaking changes
-    if (/BREAKING CHANGE:/i.test(msg) || /^[a-z]+(?:\([^)]+\))?!:/i.test(msg)) {
-      hasMajor = true;
-      continue;
-    }
-
-    // Check for minor (feat)
-    if (/^feat(?:\([^)]+\))?:/i.test(msg)) {
-      hasMinor = true;
-      continue;
-    }
-
-    // Check for patch (fix, perf)
-    if (/^(?:fix|perf)(?:\([^)]+\))?:/i.test(msg)) {
-      hasPatch = true;
-      continue;
-    }
+  if (commitLog === "") {
+    return null;
   }
-
-  if (hasMajor) return "major";
-  if (hasMinor) return "minor";
-  if (hasPatch) return "patch";
-  return null;
-}
-
-function bumpVersion(current: SemVer, bump: BumpType): SemVer {
-  switch (bump) {
-    case "major":
-      return { major: current.major + 1, minor: 0, patch: 0 };
-    case "minor":
-      return { major: current.major, minor: current.minor + 1, patch: 0 };
-    case "patch":
-      return { major: current.major, minor: current.minor, patch: current.patch + 1 };
-    default: {
-      const exhaustiveCheck: never = bump;
-      throw new Error(`Unhandled bump type: ${String(exhaustiveCheck)}`);
-    }
-  }
+  return determineBumpFromCommitMessages(commitLog.split("\n"));
 }
 
 function main(): void {
@@ -144,15 +76,11 @@ function main(): void {
   const latestTag = getLatestSemverTag();
   console.log(`Latest detected release tag: ${latestTag ?? "(none)"}`);
 
-  const baseVersion: SemVer = latestTag
-    ? (parseSemVer(latestTag) ?? { major: 1, minor: 0, patch: 0 })
-    : { major: 1, minor: 0, patch: 0 };
-
   let bumpType: BumpType | null = null;
   if (requestedBump === "major" || requestedBump === "minor" || requestedBump === "patch") {
     bumpType = requestedBump;
   } else if (requestedBump === "auto") {
-    if (!latestTag) {
+    if (latestTag === null) {
       bumpType = "patch";
     } else {
       const headCommit = runGit(["rev-parse", "HEAD"]);
@@ -169,16 +97,14 @@ function main(): void {
     );
   }
 
-  if (!bumpType) {
+  if (bumpType === null) {
     console.log(
       "No releasable commits found since previous tag (only chores, docs, or non-releasable commits). Skipping release.",
     );
     return;
   }
 
-  const nextVer = bumpVersion(baseVersion, bumpType);
-  const targetTag = `v${nextVer.major}.${nextVer.minor}.${nextVer.patch}`;
-  const majorFloatingTag = `v${nextVer.major}`;
+  const { targetTag, majorFloatingTag } = calculateNextTag(latestTag, bumpType);
 
   console.log(
     `Calculated next version: ${targetTag} (Major floating tag: ${majorFloatingTag}) [bump: ${bumpType}]`,

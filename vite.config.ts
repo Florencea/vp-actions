@@ -7,6 +7,10 @@ export default defineConfig({
       tasks: true,
     },
   },
+  test: {
+    include: ["tests/**/*.test.ts"],
+    environment: "node",
+  },
   lint: {
     options: {
       typeAware: true,
