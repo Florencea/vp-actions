@@ -102,6 +102,45 @@ jobs:
 
 ### 3. Specialized Workflows (Composite Actions)
 
+For Electron applications requiring Linux E2E smoke testing (`xvfb-run`) and OS-specific packaging verification across Linux (`ubuntu-24.04`), macOS (`macos-26`), and Windows (`windows-2025`), following standard `package.json` scripts (`agent:verify:inner`, `check:deadcode`, `agent:test:unit`, `build:all`, `app:pack`, `agent:test:e2e`, `app:linux`, `app:mac`, `app:win`):
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Gatekeeper & Package
+    uses: Florencea/vp-actions/.github/workflows/vp-electron-ci.yml@v3.0.0
+```
+
+#### `vp-electron-ci.yml` Inputs
+
+| Input               | Type      | Default              | Description                                                               |
+| :------------------ | :-------- | :------------------- | :------------------------------------------------------------------------ |
+| `pre-test-command`  | `string`  | `""`                 | Hook executed immediately before linting and testing                      |
+| `build-command`     | `string`  | `"vp run build:all"` | Production build command for Electron main, preload, and renderer         |
+| `enable-playwright` | `boolean` | `true`               | Whether to install Playwright Chromium browsers                           |
+| `enable-e2e`        | `boolean` | `true`               | Whether to pack unpacked app and run `xvfb-run` E2E smoke tests           |
+| `enable-package`    | `boolean` | `true`               | Whether to test OS-specific packaging (`app:linux`, `app:mac`, `app:win`) |
+
+---
+
+### 3. Specialized Workflows (Composite Actions)
+
 For applications requiring customized runner environments, virtual framebuffers (e.g. `xvfb-run`), or platform packaging (e.g. Electron):
 
 ```yaml
